@@ -1,0 +1,122 @@
+#!/bin/bash
+
+# An array with the names of all Nerd Fonts
+nerdFonts=(
+3270
+Agave
+AnonymousPro
+Arimo
+AurulentSansMono
+BigBlueTerminal
+BitstreamVeraSansMono
+CascadiaCode
+CodeNewRoman
+Cousine
+DaddyTimeMono
+DejaVuSansMono
+DroidSansMono
+FantasqueSansMono
+FiraCode
+FiraMono
+Go-Mono
+Gohu
+Hack
+Hasklig
+HeavyData
+Hermit
+iA-Writer
+IBMPlexMono
+Inconsolata
+InconsolataGo
+InconsolataLGC
+Iosevka
+JetBrainsMono
+Lekton
+LiberationMono
+Meslo
+Monofur
+Monoid
+Mononoki
+MPlus
+Noto
+OpenDyslexic
+Overpass
+ProFont
+ProggyClean
+RobotoMono
+ShareTechMono
+SourceCodePro
+SpaceMono
+Terminus
+Tinos
+Ubuntu
+UbuntuMono
+VictorMono
+		)
+#defining variables
+nerdfrepo=ryanoasis/nerd-fonts
+fontsInstalled="False"
+keepArchives="False"
+distDir="$HOME/.local/share/fonts"
+downDir="$HOME/Downloads/getnf"
+
+# help message
+usage() {
+    echo "getNF: A Better way to install NerdFonts"
+    echo ""
+    echo "Usage:"
+    echo "-h print this help message and exit"
+    echo "-k Keep the downloaded archives"
+    echo ""
+}
+
+# setting flags
+while getopts :hk option; do
+    case "${option}" in
+        h) usage && exit 0 ;;
+        k) keepArchives="True" ;;
+        *) usage && exit 0
+    esac
+done
+
+# Check if the distDir exists, if it doesn't, creat it
+[ -e "$distDir" ] && echo "Font Directory exists, good" || mkdir -p $HOME/.local/share/fonts
+
+#get the latest release number from NerdFonts github repo
+release=$(curl --silent "https://api.github.com/repos/$nerdfrepo/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')
+
+# use fzf to select the fonts to be installed
+cFonts=$(printf '%s\n' "${nerdFonts[@]}" | fzf -m)
+
+#loop over the selected fonts in cFonts, download and install them
+for i in $cFonts; do
+		checkFont=$(fc-list | grep -i "$i")
+		if [ -z "$checkFont" ]; then #If the font already is installed, skip it
+				echo "$i font download started" &&
+						#download the font
+						wget --show-progress -q  https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip -P $downDir &&
+						echo "$i font download finished" &&
+						echo "$i font unziping started" &&
+						#Unzipe the downloaded archive
+						unzip -qq $downDir/$i.zip -d $distDir &&
+						echo "$i font unzipping finished" &&
+						echo "Font "$i" Installed" &&
+						#set this variable to true so that the font cache get's updated
+						aFontInstalled=True
+		else
+				echo "Font "$i" already installed"
+		fi
+done
+
+# If a font was installed, Update the cach and remove the archive
+if [ "$aFontInstalled" = "True" ]; then
+		fc-cache -fv >/dev/null 2>&1 && echo "fc-chache: succeeded"
+		#check if the user hasn't chooen to keep the updated, if not, remove them
+		if [ "$keepArchives" = "False" ]; then
+				rm $downDir/*.zip
+		else
+				echo "The archive files are in $downDir"
+		fi
+fi
+
+echo "done"
