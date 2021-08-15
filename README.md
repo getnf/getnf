@@ -5,16 +5,17 @@
 ### Dependencies
 
 - curl
-- wget
 - unzip
 - fzf
 
 ### Installation
+
 ```
 git clone https://github.com/ronniedroid/getnf.git
 cd getnf
 ./install.sh
 ```
+
 ### Usage
 
 run `getnf` from the terminal and it will represent you with a list of NerdFonts with fzf, select the once you want, and let it do it's work.
