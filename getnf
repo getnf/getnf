@@ -57,9 +57,11 @@ for i in $listFonts; do
 						echo "Font $i Installed" &&
             echo "$i provides:" &&
             fc-list | grep -i $i | \
-              grep -vi -e "windows" -e "italic" -e "bold" | \
-              awk -F "/" '{print $7}' | \
-              awk -F ":" '{print $2 " | " $1 " | " $3}'
+                grep -vi -e "windows" -e "italic" -e "bold" | \
+                awk -F "/" '{print $7}' | \
+                sed 's/style\=//' |  \
+                awk -F ":" 'BEGIN {print "Name" " | " "Descreption" " | " "Style"} {print $2 " | " $1 " | " $3}' | \
+                column -s "|" -t -o "|" &&
 						#set this variable to true so that the font cache get's updated
 						aFontInstalled=True
 		else
