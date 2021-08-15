@@ -1,61 +1,8 @@
 #!/bin/bash
 
-# An array with the names of all Nerd Fonts
-nerdFonts=(
-3270
-Agave
-AnonymousPro
-Arimo
-AurulentSansMono
-BigBlueTerminal
-BitstreamVeraSansMono
-CascadiaCode
-CodeNewRoman
-Cousine
-DaddyTimeMono
-DejaVuSansMono
-DroidSansMono
-FantasqueSansMono
-FiraCode
-FiraMono
-Go-Mono
-Gohu
-Hack
-Hasklig
-HeavyData
-Hermit
-iA-Writer
-IBMPlexMono
-Inconsolata
-InconsolataGo
-InconsolataLGC
-Iosevka
-JetBrainsMono
-Lekton
-LiberationMono
-Meslo
-Monofur
-Monoid
-Mononoki
-MPlus
-Noto
-OpenDyslexic
-Overpass
-ProFont
-ProggyClean
-RobotoMono
-ShareTechMono
-SourceCodePro
-SpaceMono
-Terminus
-Tinos
-Ubuntu
-UbuntuMono
-VictorMono
-		)
 #defining variables
-nerdfrepo=ryanoasis/nerd-fonts
-fontsInstalled="False"
+nerdfontsrepo='https://api.github.com/repos/ryanoasis/nerd-fonts'
+aFontInstalled="False"
 keepArchives="False"
 distDir="$HOME/.local/share/fonts"
 downDir="$HOME/Downloads/getnf"
@@ -82,14 +29,21 @@ done
 # Check if the distDir exists, if it doesn't, creat it
 [ -e "$distDir" ] && echo "Font Directory exists, good" || mkdir -p $HOME/.local/share/fonts
 
+# get font names
+nerdFonts=$(curl --silent "$nerdfontsrepo/contents/patched-fonts?ref=master" | \
+  grep "name" | \
+  awk -F":" '{print $2}' | \
+  sed 's/["",]//g;/install\.ps1/d')
+
 #get the latest release number from NerdFonts github repo
-release=$(curl --silent "https://api.github.com/repos/$nerdfrepo/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")')
+release=$(curl --silent "$nerdfontsrepo/releases/latest" | \
+  grep -Po '"tag_name": "\K.*?(?=")')
 
 # use fzf to select the fonts to be installed
-cFonts=$(printf '%s\n' "${nerdFonts[@]}" | fzf -m)
+listFonts=$(printf '%s\n' "${nerdFonts[@]}" | fzf -m)
 
-#loop over the selected fonts in cFonts, download and install them
-for i in $cFonts; do
+#loop over the selected fonts in listFonts, download and install them
+for i in $listFonts; do
 		checkFont=$(fc-list | grep -i "$i")
 		if [ -z "$checkFont" ]; then #If the font already is installed, skip it
 				echo "$i font download started" &&
@@ -100,11 +54,16 @@ for i in $cFonts; do
 						#Unzipe the downloaded archive
 						unzip -qq $downDir/$i.zip -d $distDir &&
 						echo "$i font unzipping finished" &&
-						echo "Font "$i" Installed" &&
+						echo "Font $i Installed" &&
+            echo "$i provides:" &&
+            fc-list | grep -i $i | \
+              grep -vi -e "windows" -e "italic" -e "bold" | \
+              awk -F "/" '{print $7}' | \
+              awk -F ":" '{print $2 " | " $1 " | " $3}'
 						#set this variable to true so that the font cache get's updated
 						aFontInstalled=True
 		else
-				echo "Font "$i" already installed"
+				echo "Font $i already installed"
 		fi
 done
 
