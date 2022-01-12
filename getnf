@@ -27,7 +27,7 @@ while getopts :hk option; do
 done
 
 # Check if the distDir exists, if it doesn't, creat it
-[ -e "$distDir" ] && echo "Font Directory exists, good" || mkdir -p $HOME/.local/share/fonts
+[ -e "$distDir" ] && echo "Fonts Directory exists, good" || mkdir -p $HOME/.local/share/fonts
 
 # get font names
 nerdFonts=$(curl --silent "$nerdfontsrepo/contents/patched-fonts?ref=master" | \
@@ -38,8 +38,6 @@ nerdFonts=$(curl --silent "$nerdfontsrepo/contents/patched-fonts?ref=master" | \
 #get the latest release number from NerdFonts github repo
 release=$(curl --silent "$nerdfontsrepo/releases/latest" | \
   grep -Po '"tag_name": "\K.*?(?=")')
-
-echo $release
 
 # use fzf to select the fonts to be installed
 listFonts=$(printf '%s\n' "${nerdFonts[@]}" | fzf -m)
@@ -64,11 +62,10 @@ for i in $listFonts; do
 									awk -F ":" 'FNR == 1 {print $2}' | \
 									awk '{print $1}' | \
 								        sed 's/"//g') &&
-						echo $installedFontName &&
 						fc-list | grep -i $installedFontName | \
 						    awk -F "/" '{print $7}' | \
 						    sed 's/style\=//' |  \
-						    awk -F ":" 'BEGIN {print "Name" " | " "Descreption" " | " "Style"} {print $2 " | " $1 " | " $3}' | \
+						    awk -F ":" 'BEGIN {print "FONT NAME" " | " "FILE NAME" " | " "STYLE"} {print $2 " | " $1 " | " $3}' | \
 						    column -s "|" -t -o "|" &&
 						#set this variable to true so that the font cache get's updated
 						aFontInstalled=True
