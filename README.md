@@ -7,6 +7,7 @@
 - curl
 - unzip
 - fzf
+- fontconfig
 
 ### Installation
 
