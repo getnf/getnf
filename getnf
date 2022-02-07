@@ -30,7 +30,7 @@ done
 # For Macs, need to set a few different things
 if [[ "$os" == 'Darwin' ]]; then
     distDir="$HOME/Library/Fonts"
-    [ -e "$downDir" ] && echo "Fonts Directory exists, good" || mkdir -p "$downDir"
+    [ -e "$downDir" ] && echo "Fonts Download Directory exists, good" || mkdir -p "$downDir"
 fi
 
 # Check if the distDir exists, if it doesn't, creat it
