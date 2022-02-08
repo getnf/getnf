@@ -57,7 +57,6 @@ for i in $listFonts; do
 		if [ -z "$checkFont" ]; then #If the font already is installed, skip it
 				echo "$i font download started" &&
             pushd "$downDir" &&
-            echo "Current Dir: $(pwd)"
 						#download the font
 						curl -LJO -\# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip" \
 						     -o $i.zip --create-dirs &&
