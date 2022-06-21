@@ -4,7 +4,7 @@
 
 ### Dependencies
 
-- curl
+- curl >= 7.73.0
 - unzip
 - fzf
 - fontconfig
