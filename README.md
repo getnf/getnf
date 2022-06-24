@@ -1,10 +1,13 @@
 # getNF
+Works with older curl versions (ex. from ubuntu repo) + some fixes
+Props to original author: ronniedroid))
 
+## -Usage-
 ## A better way to install NerdFonts
 
 ### Dependencies
 
-- curl >= 7.73.0
+- curl 
 - unzip
 - fzf
 - fontconfig
@@ -23,4 +26,4 @@ run `getnf` from the terminal and it will represent you with a list of NerdFonts
 
 By default the downloaded archives are removed, But if you give `getnf` the `-k` flag, it will not remove the Archives from $HOME/Downloads/NerdFonts
 
-Enjoy
+Enjoy!
