@@ -48,27 +48,36 @@ for i in $listFonts; do
 		if [ -z "$checkFont" ]; then #If the font already is installed, skip it
 				echo "$i font download started" &&
 						#download the font
-						curl -LJO -\# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip" \
-						     -o $i.zip --output-dir "$downDir" --create-dirs &&
+            echo "$downDir" &&
+						#curl -LJO -\# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip" \
+						#     -o $i.zip --output-dir "$downDir" --create-dirs &&
+						curl -LJO -\# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip"  &&
+            mv $i.zip $downDir && # Move font archive from the current folder to the $downDir
+            echo "$downDir/$i.zip" &&
+						#wget  "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip" \
+						#     -P "$downDir" &&
+						     #-P "$downDir" --force-directories &&
 						echo "$i font download finished" &&
 						echo "$i font unziping started" &&
 						#Unzipe the downloaded archive
 						unzip -qq $downDir/$i.zip -d $distDir &&
 						echo "$i font unzipping finished" &&
 						echo "Font $i Installed" &&
+						#set this variable to true so that the font cache get's updated
+						aFontInstalled=True && # We do this before the Additional info, so  even if it fails the font cache will be refreshed
+            #Additional info
 						echo "$i provides:" &&
 						installedFontName=$(curl --silent "$nerdfontsrepo/contents/patched-fonts/$i/Regular/complete?ref=master" | \
 									grep ".ttf" | \
 									awk -F ":" 'FNR == 1 {print $2}' | \
 									awk '{print $1}' | \
 								        sed 's/"//g') &&
+            installedFontName=$i
 						fc-list | grep -i $installedFontName | \
 						    awk -F "/" '{print $7}' | \
 						    sed 's/style\=//' |  \
 						    awk -F ":" 'BEGIN {print "FONT NAME" " | " "FILE NAME" " | " "STYLE"} {print $2 " | " $1 " | " $3}' | \
-						    column -s "|" -t -o "|" &&
-						#set this variable to true so that the font cache get's updated
-						aFontInstalled=True
+						    column -s "|" -t 
 		else
 		    echo "Font $i already installed"
 		fi
@@ -76,13 +85,15 @@ done
 
 # If a font was installed, Update the cach and remove the archive
 if [ "$aFontInstalled" = "True" ]; then
-		fc-cache -fv >/dev/null 2>&1 && echo "fc-chache: succeeded"
+    echo "Regenerating fc-cache:"
+		fc-cache -f  2>&1 && echo "fc-cache: regeneration succeeded!"
 		#check if the user hasn't chooen to keep the updated, if not, remove them
 		if [ "$keepArchives" = "False" ]; then
+        echo "Removing zip font files in $downDir" &&
 				rm $downDir/*.zip
 		else
 				echo "The archive files are in $downDir"
 		fi
 fi
 
-echo "done"
+echo "All is done!"
