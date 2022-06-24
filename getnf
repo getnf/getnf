@@ -49,14 +49,9 @@ for i in $listFonts; do
 				echo "$i font download started" &&
 						#download the font
             echo "$downDir" &&
-						#curl -LJO -\# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip" \
-						#     -o $i.zip --output-dir "$downDir" --create-dirs &&
 						curl -LJO -\# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip"  &&
             mv $i.zip $downDir && # Move font archive from the current folder to the $downDir
             echo "$downDir/$i.zip" &&
-						#wget  "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip" \
-						#     -P "$downDir" &&
-						     #-P "$downDir" --force-directories &&
 						echo "$i font download finished" &&
 						echo "$i font unziping started" &&
 						#Unzipe the downloaded archive
