@@ -3,7 +3,7 @@
 #defining variables
 nerdfontsrepo='https://api.github.com/repos/ryanoasis/nerd-fonts'
 aFontInstalled="False"
-keepArchives="True"
+keepArchives="False"
 distDir="$HOME/.local/share/fonts"
 downDir="$HOME/Downloads/NerdFonts"
 
