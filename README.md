@@ -1,7 +1,8 @@
 # getNF
-Works with older curl versions (ex. from ubuntu repo) + some fixes
+###
+Works with older curl versions (ex. from ubuntu repo) + some fixes.
 Props to original author: ronniedroid))
-
+###
 ## -Usage-
 ## A better way to install NerdFonts
 
