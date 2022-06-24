@@ -3,7 +3,7 @@
 #defining variables
 nerdfontsrepo='https://api.github.com/repos/ryanoasis/nerd-fonts'
 aFontInstalled="False"
-keepArchives="False"
+keepArchives="True"
 distDir="$HOME/.local/share/fonts"
 downDir="$HOME/Downloads/NerdFonts"
 
@@ -26,7 +26,7 @@ while getopts :hk option; do
     esac
 done
 
-# Check if the distDir exists, if it doesn't, creat it
+# Check if the distDir exists, if it doesn't, create it
 [ -e "$distDir" ] && echo "Fonts Directory exists, good" || mkdir -p $HOME/.local/share/fonts
 
 # get font names
@@ -47,11 +47,11 @@ for i in $listFonts; do
 		checkFont=$(fc-list | grep -i "$i")
 		if [ -z "$checkFont" ]; then #If the font already is installed, skip it
 				echo "$i font download started" &&
+            mkdir -p $downDir && #Create downDir if needed, no error if the directory exists
 						#download the font
-            echo "$downDir" &&
-						curl -LJO -\# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip"  &&
+						curl -LJO -\# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip"  --create-dirs &&
             mv $i.zip $downDir && # Move font archive from the current folder to the $downDir
-            echo "$downDir/$i.zip" &&
+            echo "Moved to: $downDir/$i.zip" &&
 						echo "$i font download finished" &&
 						echo "$i font unziping started" &&
 						#Unzipe the downloaded archive
