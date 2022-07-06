@@ -6,6 +6,7 @@ aFontInstalled="False"
 keepArchives="False"
 distDir="$HOME/.local/share/fonts"
 downDir="$HOME/Downloads/NerdFonts"
+os=$(uname)
 
 # help message
 usage() {
@@ -26,64 +27,77 @@ while getopts :hk option; do
     esac
 done
 
-# Check if the distDir and downDir exists, if it doesn't, creat it
+# For Macs, need to set a few different things
+if [[ "$os" == 'Darwin' ]]; then
+    distDir="$HOME/Library/Fonts"
+fi
+
+# Check if the distDir and downDir exists, if it doesn't, create it
 [ -d "$distDir" ] || mkdir -p "$distDir" && echo "Fonts Directory exists, good" 
 [ -d "$downDir" ] || mkdir -p "$downDir" && echo "Download Fonts Directory exists, good" 
 
 # get font names
 nerdFonts=$(curl --silent "$nerdfontsrepo/contents/patched-fonts?ref=master" | \
-  grep "name" | \
-  awk -F":" '{print $2}' | \
-  sed 's/["",]//g;/install\.ps1/d')
+                grep "name" | \
+                awk -F":" '{print $2}' | \
+                sed 's/["",]//g;/install\.ps1/d')
 
 #get the latest release number from NerdFonts github repo
 release=$(curl --silent "$nerdfontsrepo/releases/latest" | \
-  grep -Po '"tag_name": "\K.*?(?=")')
+              grep -Po '"tag_name": "\K.*?(?=")')
 
 # use fzf to select the fonts to be installed
 listFonts=$(printf '%s\n' "${nerdFonts[@]}" | fzf -m)
 
 #loop over the selected fonts in listFonts, download and install them
 for i in $listFonts; do
-		checkFont=$(fc-list | grep -i "$i")
-		if [ -z "$checkFont" ]; then #If the font already is installed, skip it
-				echo "$i font download started" &&
-						#download the font
-						curl -LJO -\# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip" \
-						     -o "$i.zip" --output-dir "$downDir" --create-dirs &&
-						echo "$i font download finished" &&
-						echo "$i font unziping started" &&
-						#Unzipe the downloaded archive
-						unzip -qq "$downDir/$i.zip" -d "$distDir" &&
-						echo "$i font unzipping finished" &&
-						echo "Font $i Installed" &&
-						echo "$i provides:" &&
-						installedFontName=$(curl --silent "$nerdfontsrepo/contents/patched-fonts/$i/Regular/complete?ref=master" | \
-									grep ".ttf" | \
-									awk -F ":" 'FNR == 1 {print $2}' | \
-									awk '{print $1}' | \
-								        sed 's/"//g') &&
-						fc-list | grep -i "$installedFontName" | \
-						    awk -F "/" '{print $7}' | \
-						    sed 's/style\=//' |  \
-						    awk -F ":" 'BEGIN {print "FONT NAME" " | " "FILE NAME" " | " "STYLE"} {print $2 " | " $1 " | " $3}' | \
-						    column -s "|" -t -o "|" &&
-						#set this variable to true so that the font cache get's updated
-						aFontInstalled=True
-		else
-		    echo "Font $i already installed"
-		fi
+    checkFont=$(fc-list | grep -i "$i")
+    if [ -z "$checkFont" ]; then #If the font already is installed, skip it
+	echo "$i font download started" &&
+            pushd "$downDir" > /dev/null &&
+	    #download the font
+	    curl -LJO -\# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$i.zip" \
+		 -o "$i.zip" --create-dirs &&
+	    echo "$i font download finished" &&
+	    echo "$i font unziping started" &&
+	    #Unzipe the downloaded archive
+	    # unzip -qq "$downDir/$i.zip" -d "$distDir" &&
+            unzip -qq "$i.zip" -d "$distDir" &&
+	    echo "$i font unzipping finished" &&
+	    echo "Font $i Installed" &&
+	    installedFontName=$(curl --silent "$nerdfontsrepo/contents/patched-fonts/$i/Regular/complete?ref=master" | \
+				    grep ".ttf" | \
+				    awk -F ":" 'FNR == 1 {print $2}' | \
+				    awk '{print $1}' | \
+				    sed 's/"//g') &&
+            #set this variable to true so that the font cache get's updated
+            aFontInstalled=True && # We do this before the Additional info, so  even if it fails the font cache will be refreshed
+            #Additional info, only if we can get the real font name
+            if [ -n "$installedFontName" ]; then
+                echo "$i provides:" &&
+	        fc-list | grep -i "$installedFontName" | \
+		    awk -F "/" '{print $7}' | \
+		    sed 's/style\=//' |  \
+		    awk -F ":" 'BEGIN {print "FONT NAME" " | " "FILE NAME" " | " "STYLE"} {print $2 " | " $1 " | " $3}' | \
+            	    column -s "|" -t
+            fi
+            popd > /dev/null
+    else
+	echo "Font $i already installed"
+    fi
 done
 
 # If a font was installed, Update the font cache and remove the archive
 if [ "$aFontInstalled" = "True" ]; then
-		fc-cache -fv >/dev/null 2>&1 && echo "fc-cache: succeeded"
-		#check if the user hasn't chooen to keep the updated, if not, remove them
-		if [ "$keepArchives" = "False" ]; then
-				rm $downDir/*.zip
-		else
-				echo "The archive files are in $downDir"
-		fi
+    echo "Regenerating fc-cache"
+    fc-cache -f  2>&1 && echo "fc-cache: regeneration succeeded!"
+    #check if the user hasn't chooen to keep the updated, if not, remove them
+    if [ "$keepArchives" = "False" ]; then
+        echo "Removing zip font files in $downDir" &&
+	rm $downDir/*.zip
+    else
+	echo "The archive files are in $downDir"
+    fi
 fi
 
-echo "done"
+echo "All is done!"
