@@ -5,7 +5,7 @@ nerdfontsrepo='https://api.github.com/repos/ryanoasis/nerd-fonts'
 aFontInstalled="False"
 keepArchives="False"
 distDir="$HOME/.local/share/fonts"
-downDir="$HOME/Downloads/NerdFonts"
+downDir="$(command -V xdg-user-dir &> /dev/null && xdg-user-dir DOWNLOAD || echo "$HOME/Downloads")/NerdFonts"
 os=$(uname)
 
 # help message
