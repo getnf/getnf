@@ -32,9 +32,9 @@ usage() {
 	echo "-f force reinstall an already installed font"
 	echo "-k Keep the downloaded fonts zip files${RESET}"
 	echo ""
-	echo "- ${BLUE}Choose one font at a time from a list of Nerd Fonts"
-	echo "- Type ${GREEN}i${RESET} ${BLUE}to install the selected fonts"
-	echo "- Or ${RED}q${RESET} ${BLUE}to cancel${RESET}"
+	echo "- ${BLUE}Choose one or more fonts (by index/number) to install"
+	echo "- Hit Return/Enter to install the selected fonts"
+	echo "- Type the index/number corresponding to 'Quit' to cancel${RESET}"
 	echo ""
 }
 
@@ -72,15 +72,24 @@ fi
 # Download the file list and extract the font names
 font_list=$(curl -s "$nerdfontsrepo/contents/patched-fonts?ref=master" |
 	awk -F'"' '/name/ {print $4}')
-# Convert the list into an array
-readarray -t fonts <<<"$font_list"
+# Convert the list of fonts into an array of fonts
+declare -a fonts
+# Read the input string and populate the array, we do this to get rid of the `readarray` command
+while IFS= read -r line; do
+	fonts+=("$line")
+done <<<"$font_list"
+#define a file for the installed fonts names to be stored in
 installed_fonts_file="$cache_dir/installed.txt"
 [ -f "$installed_fonts_file" ] && installed_fonts_list=$(cat "$installed_fonts_file") || installed_fonts_list=()
-readarray -t installed_fonts <<<"$installed_fonts_list"
+# Convert the list of installed fonts into an array of fonts
+declare -a installed_fonts
+while IFS= read -r line; do
+	installed_fonts+=("$line")
+done <<<"$installed_fonts_list"
 # a list of currently selectd fonts
 selected_fonts=()
 
-# Remove installed fonts from the list of all fonts
+# Remove installed fonts from the list of all fonts if there is no new release
 if [[ $update_fonts = "False" ]]; then
 	available_fonts=()
 	for font in "${fonts[@]}"; do
@@ -92,27 +101,6 @@ else
 	echo "" >"$installed_fonts_file"
 	available_fonts=("${fonts[@]}")
 fi
-
-function print_selected_fonts() {
-	if ((${#selected_fonts[@]} > 0)); then
-		echo "${BLUE}Selected fonts:${RESET}"
-		echo "${BLUE}[${RESET}${selected_fonts[@]}${BLUE}]${RESET}"
-	fi
-}
-
-function remove_selected_fonts() {
-	local font_options=("$@")
-	for font in "${selected_fonts[@]}"; do
-		font_options=("${options[@]/$font/}")
-	done
-	local filtered_options=()
-	for font in "${font_options[@]}"; do
-		if [[ -n $font ]]; then
-			filtered_options+=("$font")
-		fi
-	done
-	echo "${filtered_options[@]}"
-}
 
 function download_font() {
 	echo "${BLUE}$1 download started...${RESET}"
@@ -140,42 +128,52 @@ function update_fonts_cache() {
 	echo "${GREEN}fc-cache: update succeeded!${RESET}"
 }
 
-# Prompt the user to select one or more fonts
-PS3="${BLUE}Select a font (${GREEN}'i'${RESET} ${BLUE}to install, ${RED}'q'${RESET} ${BLUE}to quit):${RESET} "
+# Remove already selected fonts from the menu
+if [ $force_update = "True" ]; then
+	font_options=("${fonts[@]}")
+else
+	font_options=("${available_fonts[@]}")
+fi
+# Define function to print menu
+function menu {
+	font_options+=("Quit")
+	echo "${BLUE}Select one or more fonts:${reset}"
+	for i in "${!font_options[@]}"; do
+		printf "%d) %s\n" "$((i + 1))" "${font_options[$i]}"
+	done | pr -3 -t -w $(tput cols)
+}
+
+# call the menu funciton to list the available fonts
+menu
+
+## Handle user input
 while true; do
-	# Print the selected fonts if any
-	print_selected_fonts
-	# Remove already selected fonts from the menu
-	if [ $force_update = "True" ]; then
-		font_options=("${fonts[@]}")
-	else
-		font_options=("${available_fonts[@]}")
-	fi
-	font_options=($(remove_selected_fonts "${font_options[@]}"))
-	# if all the avilable options have been selected, proceed to download and install them.
-	if ((${#font_options[@]} == 0)); then
-		echo "${RED}All available fonts have been selected.${RESET}"
-		break
-	fi
-	# Prompt the user to select a font
-	select font in "${font_options[@]}"; do
-		if [[ -n $font ]]; then
-			selected_fonts+=("$font")
-			break
-		elif [[ $REPLY == i ]]; then
-			break 2
-		elif [[ $REPLY == q ]]; then
-			exit
+	read -p "${BLUE}Enter font number(s) (comma-separated):${RESET} " choices
+	IFS=',' read -ra selected <<<"$choices"
+	for choice in "${selected[@]}"; do
+		if ((choice >= 1 && choice <= ${#font_options[@]})); then
+			index=$((choice - 1))
+			if [[ ${font_options[$index]} == "Quit" ]]; then
+				echo "${GREEN}Goodbye!${reset}"
+				exit
+			fi
+			selected_fonts[$index]=${font_options[$index]}
 		else
-			echo "${RED}Invalid selection. Try again.${RESET}"
+			echo "${RED}Invalid option: $choice. Try again.${reset}"
+			continue 2
 		fi
 	done
+	break
 done
 
 # loop over the selected fonts and download them
 if ((${#selected_fonts[@]} > 0)); then
 	for i in "${selected_fonts[@]}"; do
 		pushd "$down_dir" >/dev/null
+		# remove the zip file of the download font if it exsists, this is due to curl not having an overwirte function
+		if [ -f $down_dir/$i.zip ]; then
+			rm $down_dir/$i.zip
+		fi
 		download_font $i &&
 			install_font $i &&
 			echo $i >>"$installed_fonts_file"
@@ -199,4 +197,4 @@ if [ "$aFontInstalled" = "True" ]; then
 	fi
 fi
 
-echo "${GREEN}All is done!${RESET}"
+echo "${GREEN}Enjoy your new fonts!${RESET}"
