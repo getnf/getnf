@@ -11,6 +11,12 @@ update_fonts="False"
 force_update="False"
 os=$(uname)
 
+# Set colors
+RED=$(tput setaf 1)
+GREEN=$(tput setaf 2)
+BLUE=$(tput setaf 4)
+RESET=$(tput sgr0)
+
 # For Macs, need to set a few different things
 if [[ "$os" == 'Darwin' ]]; then
 	dist_dir="$HOME/Library/Fonts"
@@ -19,16 +25,16 @@ fi
 
 # help message
 usage() {
-	echo -e "\e[34mgetNF: A Better way to install NerdFonts\e[0m"
+	echo "${BLUE}getNF: A Better way to install NerdFonts${RESET}"
 	echo ""
-	echo -e "\e[34mUsage:\e[0m"
-	echo -e "\e[34m-h print this help message and exit"
-	echo -e "-f force reinstall an already installed font"
-	echo -e "-k Keep the downloaded fonts zip files\e[0m"
+	echo "${BLUE}Usage:${RESET}"
+	echo "${BLUE}-h print this help message and exit"
+	echo "-f force reinstall an already installed font"
+	echo "-k Keep the downloaded fonts zip files${RESET}"
 	echo ""
-	echo -e "- \e[34mChoose one font at a time from a list of Nerd Fonts"
-	echo -e "- Type \e[32mi\e[0m \e[34mto install the selected fonts"
-	echo -e "- Or \e[31mq\e[0m \e[34mto cancel\e[0m"
+	echo "- ${BLUE}Choose one font at a time from a list of Nerd Fonts"
+	echo "- Type ${GREEN}i${RESET} ${BLUE}to install the selected fonts"
+	echo "- Or ${RED}q${RESET} ${BLUE}to cancel${RESET}"
 	echo ""
 }
 
@@ -43,8 +49,8 @@ while getopts :hkf option; do
 done
 
 # Check if the distDir and downDir exists, if it doesn't, create it
-[ -d "$dist_dir" ] && echo -e "\e[34mFonts directory exists, good.\e[0m" || (mkdir -p "$dist_dir" && echo -e "\e[32mCreated the fonts directory.\e[0m")
-[ -d "$down_dir" ] && echo -e "\e[34mFonts download directory exists, good.\e[0m" || (mkdir -p "$down_dir" && echo -e "\e[32mCreated fonts download directory..\e[0m")
+[ -d "$dist_dir" ] && echo "${BLUE}Fonts directory exists, good.${RESET}" || (mkdir -p "$dist_dir" && echo "${GREEN}Created the fonts directory.${RESET}")
+[ -d "$down_dir" ] && echo "${BLUE}Fonts download directory exists, good.${RESET}" || (mkdir -p "$down_dir" && echo "${GREEN}Created fonts download directory..${RESET}")
 [ -d "$cache_dir" ] || mkdir -p "$cache_dir"
 
 ## Handle release version
@@ -89,70 +95,70 @@ fi
 
 function print_selected_fonts() {
 	if ((${#selected_fonts[@]} > 0)); then
-		echo -e "\e[34mSelected fonts:\e[0m"
-		echo -e "\e[34m[\e[0m${selected_fonts[@]}\e[34m]\e[0m"
+		echo "${BLUE}Selected fonts:${RESET}"
+		echo "${BLUE}[${RESET}${selected_fonts[@]}${BLUE}]${RESET}"
 	fi
 }
 
 function remove_selected_fonts() {
-	local options=("$@")
+	local font_options=("$@")
 	for font in "${selected_fonts[@]}"; do
-		options=("${options[@]/$font/}")
+		font_options=("${options[@]/$font/}")
 	done
 	local filtered_options=()
-	for option in "${options[@]}"; do
-		if [[ -n $option ]]; then
-			filtered_options+=("$option")
+	for font in "${font_options[@]}"; do
+		if [[ -n $font ]]; then
+			filtered_options+=("$font")
 		fi
 	done
 	echo "${filtered_options[@]}"
 }
 
 function download_font() {
-	echo -e "\e[34m$1 download started...\e[0m"
+	echo "${BLUE}$1 download started...${RESET}"
 	curl -LJO# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$1.zip"
-	echo -e "\e[32m$1 download finished\e[0m"
+	echo "${GREEN}$1 download finished${RESET}"
 }
 
 function install_font() {
-	echo -e "\e[34m$1 instalation started...\e[0m"
+	echo "${BLUE}$1 instalation started...${RESET}"
 	unzip -qqo "$1.zip" -d "$dist_dir"
-	echo -e "\e[32m$1 installation finished\e[0m"
+	echo "${GREEN}$1 installation finished${RESET}"
 }
 
 function remove_zip_files() {
-	echo -e "\e[34mRemoving downloaded zip files from $down_dir...\e[0m"
+	echo "${BLUE}Removing downloaded zip files from $down_dir...${RESET}"
 	for font in "${selected_fonts[@]}"; do
 		rm $down_dir/$font.zip
 	done
-	echo -e "\e[32mDownloaded zip files removal suceeded!\e[0m"
+	echo "${GREEN}Downloaded zip files removal suceeded!${RESET}"
 }
 
 function update_fonts_cache() {
-	echo -e "\e[34mUpdating fc-cache...\e[0m"
+	echo "${BLUE}Updating fc-cache...${RESET}"
 	fc-cache -f 2>&1
-	echo -e "\e[32mfc-cache: update succeeded!\e[0m"
+	echo "${GREEN}fc-cache: update succeeded!${RESET}"
 }
 
 # Prompt the user to select one or more fonts
-PS3="Select a font ('i' to install, 'q' to quit): "
+PS3="${BLUE}Select a font (${GREEN}'i'${RESET} ${BLUE}to install, ${RED}'q'${RESET} ${BLUE}to quit):${RESET} "
 while true; do
 	# Print the selected fonts if any
 	print_selected_fonts
 	# Remove already selected fonts from the menu
 	if [ $force_update = "True" ]; then
-		options=("${fonts[@]}")
+		font_options=("${fonts[@]}")
 	else
-		options=("${available_fonts[@]}")
+		font_options=("${available_fonts[@]}")
 	fi
-	options=($(remove_selected_fonts "${options[@]}"))
+	font_options=($(remove_selected_fonts "${font_options[@]}"))
 	# if all the avilable options have been selected, proceed to download and install them.
-	if ((${#options[@]} == 0)); then
-		echo -e "\e[31mAll available fonts have been selected.\e[0m"
+	if ((${#font_options[@]} == 0)); then
+		echo "${RED}All available fonts have been selected.${RESET}"
 		break
 	fi
 	# Prompt the user to select a font
-	select font in "${options[@]}"; do
+	select font in "${font_options[@]}"; do
 		if [[ -n $font ]]; then
 			selected_fonts+=("$font")
 			break
@@ -161,7 +167,7 @@ while true; do
 		elif [[ $REPLY == q ]]; then
 			exit
 		else
-			echo -e "\e[31mInvalid selection. Try again.\e[0m"
+			echo "${RED}Invalid selection. Try again.${RESET}"
 		fi
 	done
 done
@@ -177,7 +183,7 @@ if ((${#selected_fonts[@]} > 0)); then
 		popd >/dev/null
 	done
 else
-	echo -e "\e[31mNo fonts were selected selected, exiting.\e[0m"
+	echo "${RED}No fonts were selected selected, exiting.${RESET}"
 	exit
 fi
 
@@ -189,8 +195,8 @@ if [ "$aFontInstalled" = "True" ]; then
 	if [ "$removeZipFiles" = "True" ]; then
 		remove_zip_files
 	else
-		echo -e "\e[32mThe downloaded zip files can be found in $down_dir\e[0m"
+		echo "${GREEN}The downloaded zip files can be found in $down_dir${RESET}"
 	fi
 fi
 
-echo -e "\e[32mAll is done!\e[0m"
+echo "${GREEN}All is done!${RESET}"
