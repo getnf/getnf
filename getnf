@@ -170,6 +170,8 @@ done
 if ((${#selected_fonts[@]} > 0)); then
 	for i in "${selected_fonts[@]}"; do
 		pushd "$down_dir" >/dev/null
+		# remove the zip file of the download font if it exsists, this is due to curl not having an overwirte function
+		[ -f $down_dir/$i.zip ] && $(rm $down_dir/$i.zip) || continue
 		download_font $i &&
 			install_font $i &&
 			echo $i >>"$installed_fonts_file"
