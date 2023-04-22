@@ -16,6 +16,8 @@ cd getnf
 ./install.sh
 ```
 
+Make sure that `~/.local/bin` is in your PATH
+
 ### Usage
 
 run `getnf -h` to get a help message.
