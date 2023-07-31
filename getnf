@@ -10,6 +10,8 @@ cache_dir="$HOME/.cache/nerdFonts"
 update_fonts="False"
 force_update="False"
 os=$(uname)
+isUnzip=$(whereis unzip | awk -F' ' '{print $2}')
+isCurl=$(whereis curl | awk -F' ' '{print $2}')
 
 # Set colors
 RED=$(tput setaf 1)
@@ -47,6 +49,10 @@ while getopts :hkf option; do
 	*) usage && exit 0 ;;
 	esac
 done
+
+# Check if dependencies exist
+[ -z "$isUnzip" ] && echo "${RED}Dependency unzip is not installed on your system.${RESET}" && exit
+[ -z "$isUnzip" ] && echo "${RED}Dependency curl is not installed on your system.${RESET}" && exit
 
 # Check if the distDir and downDir exists, if it doesn't, create it
 [ -d "$dist_dir" ] && echo "${BLUE}Fonts directory exists, good.${RESET}" || (mkdir -p "$dist_dir" && echo "${GREEN}Created the fonts directory.${RESET}")
