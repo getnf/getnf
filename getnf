@@ -115,7 +115,7 @@ function download_font() {
 }
 
 function install_font() {
-    echo "${BLUE}$1 instalation started...${RESET}"
+    echo "${BLUE}$1 installation started...${RESET}"
         dist=$(mkdir $dist_dir/$1)
 	unzip -qqo "$1.zip" -d "$dist_dir/$1"
 	echo "${GREEN}$1 installation finished${RESET}"
@@ -201,7 +201,7 @@ done
 if ((${#selected_fonts[@]} > 0)); then
 	for i in "${selected_fonts[@]}"; do
 		pushd "$down_dir" >/dev/null
-		# remove the zip file of the download font if it exsists, this is due to curl not having an overwirte function
+		# remove the zip file of the download font if it exists, this is due to curl not having an overwrite function
 		if [ -f $down_dir/$i.zip ]; then
 			rm $down_dir/$i.zip
 		fi
@@ -212,7 +212,7 @@ if ((${#selected_fonts[@]} > 0)); then
 		popd >/dev/null
 	done
 else
-	echo "${RED}No fonts were selected selected, exiting.${RESET}"
+	echo "${RED}No fonts were selected, exiting.${RESET}"
 	exit
 fi
 
