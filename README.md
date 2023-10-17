@@ -5,8 +5,9 @@
 ### Dependencies
 
 - curl
-- unzip
 - fontconfig
+- ncurses
+- unzip
 
 ### Installation
 
