@@ -24,8 +24,9 @@ Make sure that `~/.local/bin` is in your PATH
 run `getnf -h` to get a help message.
 
 - run `getnf` from the terminal and it will represent you with a list of Nerd Fonts,
-- choose one font at a time from the list.
-- Type `i` to install the selected fonts or `q` to  cancel.
+- choose one or more fonts (by index/number) to install
+- hit Return/Enter to install the selected fonts
+- type the index/number corresponding to 'Quit' to cancel
 
 By default the downloaded zip files are removed,
 use the `-k` flag to keep the zip files in the downloads directory.
