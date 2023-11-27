@@ -8,6 +8,7 @@ mkdir -p "$DEST"
 
 if [ -n "$CURL_COMMAND" ]; then
     #  if the script was invoked by curl
+    rm -f "$GETNFLOC"
 
     # -f: fail fast with no output at all on server errors
     # -s: be silent
