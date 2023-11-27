@@ -12,6 +12,12 @@
 ### Installation
 
 ```
+bash <(curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh)
+```
+
+or
+
+```
 git clone https://github.com/ronniedroid/getnf.git
 cd getnf
 ./install.sh
