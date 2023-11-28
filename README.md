@@ -15,21 +15,13 @@
 bash <(curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh)
 ```
 
-or
-
-```
-git clone https://github.com/ronniedroid/getnf.git
-cd getnf
-./install.sh
-```
-
-Make sure that `~/.local/bin` is in your PATH
+Make sure that `~/.local/bin` is in your PATH.
 
 ### Usage
 
-run `getnf -h` to get a help message.
+Run `getnf -h` to get a help message.
 
-- run `getnf` from the terminal and it will represent you with a list of Nerd Fonts,
+- run `getnf` from the terminal and it will present you with a list of Nerd Fonts
 - choose one or more fonts (by index/number) to install
 - hit Return/Enter to install the selected fonts
 - type the index/number corresponding to 'Quit' to cancel
