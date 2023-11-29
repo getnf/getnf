@@ -12,13 +12,7 @@
 ### Installation
 
 ```
-bash <(curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh)
-```
-
-or (if you are using fish)
-
-```
-bash (curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh | psub)
+curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh | sh
 ```
 
 Make sure that `~/.local/bin` is in your PATH.
