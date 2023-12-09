@@ -143,7 +143,7 @@ fi
 # Define function to print menu
 function menu {
 	font_options+=("Quit")
-	echo "${BLUE}Select one or more fonts:${reset}"
+	echo "${BLUE}Select one or more fonts:${RESET}"
 	for i in "${!font_options[@]}"; do
 		printf "%d) %s\n" "$((i + 1))" "${font_options[$i]}"
 	done | pr -3 -t -w "$(tput cols)"
