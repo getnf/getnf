@@ -66,7 +66,7 @@ release_file="$cache_dir/release.txt"
 [ -f "$release_file" ] && cached_release=$(cat "$release_file") || cached_release=""
 # Get the latest release number from NerdFonts github repo
 release=$(curl --silent "$nerdfontsrepo/releases/latest" |
-	awk -F'"' '/tag_name/ {print $4}')
+	awk -v RS=',' -F'"' '/tag_name/ {print $4}')
 # Compare the latest release number with the cached release number
 if [ "$release" != "$cached_release" ]; then
 	update_fonts=True
@@ -77,7 +77,7 @@ fi
 ## Handle the font names
 # Download the file list and extract the font names
 font_list=$(curl -s "$nerdfontsrepo/contents/patched-fonts?ref=master" |
-	awk -F'"' '/name/ {print $4}')
+	awk -v RS=',' -F'"' '/name/ {print $4}')
 # Convert the list of fonts into an array of fonts
 declare -a fonts
 # Read the input string and populate the array, we do this to get rid of the `readarray` command
