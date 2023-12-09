@@ -187,7 +187,7 @@ while true; do
 				echo "${GREEN}Goodbye!${reset}"
 				exit
 			fi
-			selected_fonts[$index]=${font_options[$index]}
+			selected_fonts[index]=${font_options[index]}
 		else
 			echo "${RED}Invalid option: $choice. Try again.${RESET}"
 			continue 2
