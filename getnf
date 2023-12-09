@@ -5,8 +5,8 @@ nerdfontsrepo='https://api.github.com/repos/ryanoasis/nerd-fonts'
 aFontInstalled="False"
 removeZipFiles="True"
 dist_dir="$HOME/.local/share/fonts"
-down_dir="$(command -V xdg-user-dir &>/dev/null && xdg-user-dir DOWNLOAD || echo "$HOME/Downloads")/NerdFonts"
-cache_dir="$HOME/.cache/nerdFonts"
+down_dir="$(command -V xdg-user-dir &>/dev/null && xdg-user-dir DOWNLOAD || echo "$HOME/Downloads/")NerdFonts"
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/nerdFonts"
 update_fonts="False"
 force_update="False"
 os=$(uname)
@@ -116,7 +116,6 @@ function download_font() {
 
 function install_font() {
     echo "${BLUE}$1 installation started...${RESET}"
-        dist=$(mkdir $dist_dir/$1)
 	unzip -qqo "$1.zip" -d "$dist_dir/$1"
 	echo "${GREEN}$1 installation finished${RESET}"
 }
@@ -124,7 +123,7 @@ function install_font() {
 function remove_zip_files() {
 	echo "${BLUE}Removing downloaded zip files from $down_dir...${RESET}"
 	for font in "${selected_fonts[@]}"; do
-		rm $down_dir/$font.zip
+		rm "$down_dir/$font.zip"
 	done
 	echo "${GREEN}Downloaded zip files removal suceeded!${RESET}"
 }
@@ -144,10 +143,10 @@ fi
 # Define function to print menu
 function menu {
 	font_options+=("Quit")
-	echo "${BLUE}Select one or more fonts:${reset}"
+	echo "${BLUE}Select one or more fonts:${RESET}"
 	for i in "${!font_options[@]}"; do
 		printf "%d) %s\n" "$((i + 1))" "${font_options[$i]}"
-	done | pr -3 -t -w $(tput cols)
+	done | pr -3 -t -w "$(tput cols)"
 }
 
 # call the menu funciton to list the available fonts
@@ -178,17 +177,17 @@ function parse_range {
 ## Handle user input
 while true; do
 	read -p "${BLUE}Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5):${RESET} " choices
-	for choice in $(echo $choices | tr ',' ' '); do
+	for choice in $(echo "$choices" | tr ',' ' '); do
 		# check if they entered a range (e.g. 1-3)
 		if [[ $choice == *-* ]]; then
-			parse_range $choice || continue 2
+			parse_range "$choice" || continue 2
 		elif ((choice >= 1 && choice <= ${#font_options[@]})); then
 			index=$((choice - 1))
 			if [[ ${font_options[$index]} == "Quit" ]]; then
 				echo "${GREEN}Goodbye!${reset}"
 				exit
 			fi
-			selected_fonts[$index]=${font_options[$index]}
+			selected_fonts[index]=${font_options[index]}
 		else
 			echo "${RED}Invalid option: $choice. Try again.${RESET}"
 			continue 2
@@ -202,12 +201,12 @@ if ((${#selected_fonts[@]} > 0)); then
 	for i in "${selected_fonts[@]}"; do
 		pushd "$down_dir" >/dev/null
 		# remove the zip file of the download font if it exists, this is due to curl not having an overwrite function
-		if [ -f $down_dir/$i.zip ]; then
-			rm $down_dir/$i.zip
+		if [ -f "$down_dir/$i.zip" ]; then
+			rm "$down_dir/$i.zip"
 		fi
-		download_font $i &&
-			install_font $i &&
-			echo $i >>"$installed_fonts_file"
+		download_font "$i" &&
+			install_font "$i" &&
+			echo "$i" >>"$installed_fonts_file"
 		aFontInstalled=True
 		popd >/dev/null
 	done
