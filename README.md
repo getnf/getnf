@@ -34,3 +34,10 @@ unless there is a new version of Nerd Fonts.
 You can force reinstalling a font by using the `-f` flag.
 
 Enjoy!
+
+### Notes
+
+You can suppress the installation output with a flag `--silent` or `-s`:
+```
+curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh | sh -s -- --silent
+```
