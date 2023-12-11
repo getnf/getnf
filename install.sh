@@ -3,17 +3,24 @@
 DEST="$HOME/.local/bin"
 GETNFLOC="$DEST/getnf"
 
-# -p will not error if the directory already exists
-mkdir -p "$DEST"
+GREEN=$(tput setaf 2)
+BLUE=$(tput setaf 4)
+RESET=$(tput sgr0)
 
+# add the -s or --silent flag to suppress output
+SILENT=$([[ "$1" == "-s" ]] || [[ "$1" == "--silent" ]] && echo true || echo false)
+
+$SILENT || echo "${BLUE}Installing getnf...${RESET}"
+
+mkdir -p "$DEST"
 rm -f "$GETNFLOC"
 
-# -f: fail fast with no output at all on server errors
-# -s: be silent
-# -S: but show an error message if it fails
-# -L: follow redirects
-# -O: write output to a local file named like the remote file
-curl -fsSLO https://raw.githubusercontent.com/ronniedroid/getnf/master/getnf --output-dir "$DEST"
+if $SILENT; then
+    curl -fsSLO https://raw.githubusercontent.com/ronniedroid/getnf/master/getnf --output-dir "$DEST"
+else
+    curl -fLO# https://raw.githubusercontent.com/ronniedroid/getnf/master/getnf --output-dir "$DEST"
+fi
 
-# make the script executable
 chmod 755 "$GETNFLOC"
+
+$SILENT || echo "${GREEN}Installation finished${RESET}"
