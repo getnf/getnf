@@ -36,7 +36,7 @@ usage() {
 	echo ""
 	echo "- ${BLUE}Choose one or more fonts (by index/number) to install"
 	echo "- Hit Return/Enter to install the selected fonts"
-	echo "- Type the index/number corresponding to 'Quit' to cancel${RESET}"
+	echo "- Type 'q' to quit${RESET}"
 	echo ""
 }
 
@@ -142,11 +142,10 @@ else
 fi
 # Define function to print menu
 function menu {
-	font_options+=("Quit")
 	echo "${BLUE}Select one or more fonts:${RESET}"
-	for i in "${!font_options[@]}"; do
+	(for i in "${!font_options[@]}"; do
 		printf "%d) %s\n" "$((i + 1))" "${font_options[$i]}"
-	done | pr -3 -t -w "$(tput cols)"
+	done && printf "q) Quit\n") | pr -3 -t -w "$(tput cols)"
 }
 
 # call the menu funciton to list the available fonts
@@ -164,9 +163,7 @@ function parse_range {
 	for ((i = range_start; i <= range_end; i++)); do
 		index=$((i - 1))
 		if ((index >= 0 && index < ${#font_options[@]})); then
-			if [[ ${font_options[index]} != "Quit" ]]; then
-				selected_fonts[index]=${font_options[index]}
-			fi
+			selected_fonts[index]=${font_options[index]}
 		else
 			echo "${RED}Invalid option: $i. Try again.${RESET}"
 			return 1
@@ -178,15 +175,14 @@ function parse_range {
 while true; do
 	read -p "${BLUE}Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5):${RESET} " choices
 	for choice in $(echo "$choices" | tr ',' ' '); do
+		if [[ $choice == "q" ]]; then
+			echo "${GREEN}Goodbye!${RESET}"
+			exit
 		# check if they entered a range (e.g. 1-3)
-		if [[ $choice == *-* ]]; then
+		elif [[ $choice == *-* ]]; then
 			parse_range "$choice" || continue 2
 		elif ((choice >= 1 && choice <= ${#font_options[@]})); then
 			index=$((choice - 1))
-			if [[ ${font_options[$index]} == "Quit" ]]; then
-				echo "${GREEN}Goodbye!${reset}"
-				exit
-			fi
 			selected_fonts[index]=${font_options[index]}
 		else
 			echo "${RED}Invalid option: $choice. Try again.${RESET}"
