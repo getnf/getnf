@@ -12,7 +12,7 @@
 ### Installation
 
 ```
-curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh | bash
 ```
 
 Make sure that `~/.local/bin` is in your PATH.
@@ -39,5 +39,5 @@ Enjoy!
 
 You can suppress the installation output with a flag `--silent` or `-s`:
 ```
-curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh | sh -s -- --silent
+curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh | bash -s -- --silent
 ```
