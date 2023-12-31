@@ -4,10 +4,9 @@
 
 ### Dependencies
 
-- curl
-- fontconfig
-- ncurses
-- unzip
+```
+pkg install curl ncurses-utils zip
+```
 
 ### Installation
 
