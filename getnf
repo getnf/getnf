@@ -1,17 +1,18 @@
 #!/bin/bash
 
 #defining variables
+PREFIX='/data/data/com.termux/files/usr'
 nerdfontsrepo='https://api.github.com/repos/ryanoasis/nerd-fonts'
 aFontInstalled="False"
 removeZipFiles="True"
-dist_dir="$HOME/.local/share/fonts"
-down_dir="$(command -V xdg-user-dir &>/dev/null && xdg-user-dir DOWNLOAD || echo "$HOME/Downloads")/NerdFonts"
-cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/nerdFonts"
+dist_dir="$PREFIX/share/termux-nf/fonts"
+down_dir="$HOME/share/termux-nf/Downloads"
+cache_dir="/data/data/com.termux/cache"
 update_fonts="False"
 force_update="False"
-os=$(uname)
-isUnzip=$(whereis unzip | awk -F' ' '{print $2}')
+sUnzip=$(whereis unzip | awk -F' ' '{print $2}')
 isCurl=$(whereis curl | awk -F' ' '{print $2}')
+TERMUX_DIR="$HOME/.termux"
 
 # Set colors
 RED=$(tput setaf 1)
@@ -19,15 +20,9 @@ GREEN=$(tput setaf 2)
 BLUE=$(tput setaf 4)
 RESET=$(tput sgr0)
 
-# For Macs, need to set a few different things
-if [[ "$os" == 'Darwin' ]]; then
-	dist_dir="$HOME/Library/Fonts"
-	cache_dir="$HOME/Library/Caches/NerdFonts"
-fi
-
 # help message
 usage() {
-	echo "${BLUE}getNF: A Better way to install NerdFonts${RESET}"
+	echo "${BLUE}termux-nf: A Better way to install NerdFonts for termux${RESET}"
 	echo ""
 	echo "${BLUE}Usage:${RESET}"
 	echo "${BLUE}-h print this help message and exit"
@@ -128,18 +123,13 @@ function remove_zip_files() {
 	echo "${GREEN}Downloaded zip files removal suceeded!${RESET}"
 }
 
-function update_fonts_cache() {
-	echo "${BLUE}Updating fc-cache...${RESET}"
-	fc-cache -f 2>&1
-	echo "${GREEN}fc-cache: update succeeded!${RESET}"
-}
-
 # Remove already selected fonts from the menu
 if [ $force_update = "True" ]; then
 	font_options=("${fonts[@]}")
 else
 	font_options=("${available_fonts[@]}")
 fi
+
 # Define function to print menu
 function menu {
 	echo "${BLUE}Select one or more fonts:${RESET}"
@@ -222,5 +212,7 @@ if [ "$aFontInstalled" = "True" ]; then
 		echo "${GREEN}The downloaded zip files can be found in $down_dir${RESET}"
 	fi
 fi
+
+
 
 echo "${GREEN}Enjoy your new fonts!${RESET}"

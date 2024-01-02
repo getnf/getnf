@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-DEST="$HOME/.local/bin"
-GETNFLOC="$DEST/getnf"
+PREFIX='/data/data/com.termux/files/usr'
+DEST="$PREFIX/bin"
+GETNFLOC="$DEST/termux-nf"
 
 GREEN=$(tput setaf 2)
 BLUE=$(tput setaf 4)
@@ -10,15 +11,15 @@ RESET=$(tput sgr0)
 # add the -s or --silent flag to suppress output
 SILENT=$([[ "$1" == "-s" ]] || [[ "$1" == "--silent" ]] && echo true || echo false)
 
-$SILENT || echo "${BLUE}Installing getnf...${RESET}"
+$SILENT || echo "${BLUE}Installing termux-nf...${RESET}"
 
 mkdir -p "$DEST"
 rm -f "$GETNFLOC"
 
 if $SILENT; then
-    curl -fsSLO https://raw.githubusercontent.com/ronniedroid/getnf/master/getnf --output-dir "$DEST"
+    curl -fsSLO https://raw.githubusercontent.com/arnavgr/termux-nf/master/getnf --output-dir "$DEST"
 else
-    curl -fLO# https://raw.githubusercontent.com/ronniedroid/getnf/master/getnf --output-dir "$DEST"
+    curl -fLO# https://raw.githubusercontent.com/arnavgr/termux-nf/master/getnf --output-dir "$DEST"
 fi
 
 chmod 755 "$GETNFLOC"
