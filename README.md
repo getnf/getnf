@@ -11,10 +11,8 @@ pkg install curl ncurses-utils zip
 ### Installation
 
 ```
-curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/arnavgr/termux-nf/master/install.sh | bash
 ```
-
-Make sure that `~/.local/bin` is in your PATH.
 
 ### Usage
 
