@@ -36,5 +36,5 @@ Enjoy!
 
 You can suppress the installation output with a flag `--silent` or `-s`:
 ```
-curl -fsSL https://raw.githubusercontent.com/ronniedroid/getnf/master/install.sh | bash -s -- --silent
+curl -fsSL https://raw.githubusercontent.com/ronniedroid/termux-nf/master/install.sh | bash -s -- --silent
 ```
