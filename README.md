@@ -1,4 +1,4 @@
-# getNF
+# TERMUX-NF
 
 ## A better way to install NerdFonts
 
