@@ -215,12 +215,14 @@ fi
 
 # Applying font on termux
 function termux {
+	
 	shopt -s nullglob
 	for ((i=0; i<${#(dist_dir)[@]}; i++)); do
 		echo "${(dist_dir)[$i]}"
 	done
-	read -p "${BLUE}Enter font number(s) (e.g. 1,2,3):${RESET} " apply
-	if [ "$apply" = "$i" ]; then
+	read -p "${BLUE}Enter font number(s) (e.g. 1,2,3):${RESET} " i
+	echo "${BLUE}There are ${#array[@]} dirs in the current path ${RESET}"; \
+	select dir in "${array[@]}"; do cd "${dir}"; break; done
 		
 		
 echo "${GREEN}Enjoy your new fonts!${RESET}"
