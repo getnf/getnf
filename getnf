@@ -223,6 +223,10 @@ function termux {
 	read -p "${BLUE}Enter font number(s) (e.g. 1,2,3):${RESET} " i
 	echo "${BLUE}There are ${#array[@]} dirs in the current path ${RESET}"; \
 	select dir in "${array[@]}"; do cd "${dir}"; break; done
+	for ((i=0; i<${#(dir)[@]}; i++)); do
+		echo "${(dir)[$i]}"
+	read -p "${BLUE}Enter font number(s) (e.g. 1,2,3):${RESET} " i
+	
 		
 		
 echo "${GREEN}Enjoy your new fonts!${RESET}"
