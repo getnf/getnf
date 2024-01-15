@@ -226,7 +226,10 @@ function termux {
 	for ((i=0; i<${#(dir)[@]}; i++)); do
 		echo "${(dir)[$i]}"
 	read -p "${BLUE}Enter font number(s) (e.g. 1,2,3):${RESET} " i
-	
+
+	echo "    ${BLUE}[${RED}*${BLUE}] ${MAGENTA}Reloading Settings..."
+    	am broadcast --user 0 -a com.termux.app.reload_style com.termux > /dev/null
+    	{ echo "    ${BLUE}[${RED}*${BLUE}] ${GREEN}Applied Successfully."; echo; }
 		
 		
 echo "${GREEN}Enjoy your new fonts!${RESET}"
