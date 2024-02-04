@@ -27,17 +27,21 @@ fi
 
 # help message
 usage() {
-	echo "${BLUE}getNF: A Better way to install NerdFonts${RESET}"
+	echo "${BLUE}getNF: A Better way to install NerdFonts"
 	echo ""
-	echo "${BLUE}Usage:${RESET}"
-	echo "${BLUE}-h print this help message and exit"
-	echo "-f force reinstall an already installed font"
-	echo "-k Keep the downloaded fonts zip files${RESET}"
+	echo "Usage:"
+	echo "  getnf [options] [font]"
 	echo ""
-	echo "- ${BLUE}Choose one or more fonts (by index/number) to install"
+	echo "OPTIONS"
+	echo "  -h    print this help message and exit"
+	echo "  -f    force reinstall an already installed font"
+	echo "  -k    keep the downloaded fonts zip files${RESET}"
+	echo ""
+	echo "-${BLUE} Choose one or more fonts (by index/number) to install"
 	echo "- Hit Return/Enter to install the selected fonts"
 	echo "- Type 'q' to quit${RESET}"
 	echo ""
+	echo "-${BLUE} Install specified font with \`getnf <font-name>\`${RESET}"
 }
 
 # Setting flags
