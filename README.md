@@ -33,6 +33,9 @@ By default, the already installed fonts are not listed in the select menu,
 unless there is a new version of Nerd Fonts.
 You can force reinstalling a font by using the `-f` flag.
 
+If you know the exact font you want to install,
+you can dot it directly with `getnf <font-name>`.
+
 Enjoy!
 
 ### Notes
