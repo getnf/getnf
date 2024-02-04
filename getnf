@@ -78,6 +78,77 @@ if [ "$release" != "$cached_release" ]; then
 	echo "$release" >"$release_file"
 fi
 
+#define a file for the installed fonts names to be stored in
+installed_fonts_file="$cache_dir/installed.txt"
+
+function download_font() {
+	echo "${BLUE}$1 download started...${RESET}"
+	curl -LJO# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$1.zip"
+	echo "${GREEN}$1 download finished${RESET}"
+}
+
+function install_font() {
+    echo "${BLUE}$1 installation started...${RESET}"
+	unzip -qqo "$1.zip" -d "$dist_dir/$1"
+	echo "${GREEN}$1 installation finished${RESET}"
+}
+
+function remove_zip_files() {
+	echo "${BLUE}Removing downloaded zip files from $down_dir...${RESET}"
+	if [[ -n "$1" ]]; then
+		rm "$down_dir/$1.zip"
+	else
+		for font in "${selected_fonts[@]}"; do
+			rm "$down_dir/$font.zip"
+		done
+	fi
+	echo "${GREEN}Downloaded zip files removal suceeded!${RESET}"
+}
+
+function update_fonts_cache() {
+	echo "${BLUE}Updating fc-cache...${RESET}"
+	fc-cache -f 2>&1
+	echo "${GREEN}fc-cache: update succeeded!${RESET}"
+}
+
+function get_font() {
+	pushd "$down_dir" >/dev/null
+	# remove the zip file of the download font if it exists, this is due to curl not having an overwrite function
+	if [ -f "$down_dir/$1.zip" ]; then
+		rm "$down_dir/$1.zip"
+	fi
+	download_font "$1" &&
+		install_font "$1" &&
+		echo "$1" >>"$installed_fonts_file"
+	aFontInstalled=True
+	popd >/dev/null
+}
+
+function font_url_exists() {
+	url="https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$1.zip"
+	curl --output /dev/null --silent --head --fail "$url" && return 0 || return 1
+}
+
+## Install specified font
+fontname="${*: -1}"
+if [[ $fontname != -* ]] && [[ $fontname != "$0" ]]; then
+	if font_url_exists "$fontname"; then
+		get_font "$fontname"
+		# Update the fonts cache
+		update_fonts_cache
+		# remove downloaded archives if the option -k was not passed
+		if [ "$removeZipFiles" = "True" ]; then
+			remove_zip_files "$fontname"
+		else
+			echo "${GREEN}The downloaded zip files can be found in $down_dir${RESET}"
+		fi
+		echo "${GREEN}Enjoy your new font!${RESET}"
+	else
+		echo "${RED}Invalid font name: $fontname. Try again.${RESET}"
+	fi
+	exit
+fi
+
 ## Handle the font names
 # Download the file list and extract the font names
 font_list=$(curl -s "$nerdfontsrepo/contents/patched-fonts?ref=master" |
@@ -88,8 +159,6 @@ declare -a fonts
 while IFS= read -r line; do
 	fonts+=("$line")
 done <<<"$font_list"
-#define a file for the installed fonts names to be stored in
-installed_fonts_file="$cache_dir/installed.txt"
 [ -f "$installed_fonts_file" ] && installed_fonts_list=$(cat "$installed_fonts_file") || installed_fonts_list=()
 # Convert the list of installed fonts into an array of fonts
 declare -a installed_fonts
@@ -111,32 +180,6 @@ else
 	echo "" >"$installed_fonts_file"
 	available_fonts=("${fonts[@]}")
 fi
-
-function download_font() {
-	echo "${BLUE}$1 download started...${RESET}"
-	curl -LJO# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$1.zip"
-	echo "${GREEN}$1 download finished${RESET}"
-}
-
-function install_font() {
-    echo "${BLUE}$1 installation started...${RESET}"
-	unzip -qqo "$1.zip" -d "$dist_dir/$1"
-	echo "${GREEN}$1 installation finished${RESET}"
-}
-
-function remove_zip_files() {
-	echo "${BLUE}Removing downloaded zip files from $down_dir...${RESET}"
-	for font in "${selected_fonts[@]}"; do
-		rm "$down_dir/$font.zip"
-	done
-	echo "${GREEN}Downloaded zip files removal suceeded!${RESET}"
-}
-
-function update_fonts_cache() {
-	echo "${BLUE}Updating fc-cache...${RESET}"
-	fc-cache -f 2>&1
-	echo "${GREEN}fc-cache: update succeeded!${RESET}"
-}
 
 # Remove already selected fonts from the menu
 if [ $force_update = "True" ]; then
@@ -199,16 +242,7 @@ done
 # loop over the selected fonts and download them
 if ((${#selected_fonts[@]} > 0)); then
 	for i in "${selected_fonts[@]}"; do
-		pushd "$down_dir" >/dev/null
-		# remove the zip file of the download font if it exists, this is due to curl not having an overwrite function
-		if [ -f "$down_dir/$i.zip" ]; then
-			rm "$down_dir/$i.zip"
-		fi
-		download_font "$i" &&
-			install_font "$i" &&
-			echo "$i" >>"$installed_fonts_file"
-		aFontInstalled=True
-		popd >/dev/null
+		get_font "$i"
 	done
 else
 	echo "${RED}No fonts were selected, exiting.${RESET}"
