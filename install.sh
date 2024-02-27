@@ -16,11 +16,12 @@ mkdir -p "$DEST"
 rm -f "$GETNFLOC"
 
 if $SILENT; then
-    curl -fsSLO https://raw.githubusercontent.com/ronniedroid/getnf/master/getnf --output-dir "$DEST"
+    curl -fsSL# https://raw.githubusercontent.com/ronniedroid/getnf/master/getnf --output getnftemp
 else
-    curl -fLO# https://raw.githubusercontent.com/ronniedroid/getnf/master/getnf --output-dir "$DEST"
+    curl -fL# https://raw.githubusercontent.com/ronniedroid/getnf/master/getnf --output getnftemp
 fi
 
+mv getnftemp "$GETNFLOC"
 chmod 755 "$GETNFLOC"
 
 $SILENT || echo "${GREEN}Installation finished${RESET}"
