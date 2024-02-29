@@ -25,23 +25,30 @@ if [[ "$os" == 'Darwin' ]]; then
 	cache_dir="$HOME/Library/Caches/NerdFonts"
 fi
 
-# help message
+# Help message
 usage() {
-	echo "${BLUE}getNF: A Better way to install NerdFonts"
-	echo ""
-	echo "Usage:"
-	echo "  getnf [options] [font]"
-	echo ""
-	echo "OPTIONS"
-	echo "  -h    print this help message and exit"
-	echo "  -f    force reinstall an already installed font"
-	echo "  -k    keep the downloaded fonts zip files${RESET}"
-	echo ""
-	echo "-${BLUE} Choose one or more fonts (by index/number) to install"
-	echo "- Hit Return/Enter to install the selected fonts"
-	echo "- Type 'q' to quit${RESET}"
-	echo ""
-	echo "-${BLUE} Install specified font with \`getnf <font-name>\`${RESET}"
+	cat << EOF
+${BLUE}getNF: A Better way to install NerdFonts
+
+Usage:
+  getnf [options]
+
+OPTIONS:
+  -h		  print this help message and exit
+  -f		  force reinstall an already installed font
+  -k		  keep the downloaded fonts zip files
+  -i <font>   directly install the specified fonts
+
+To install fonts using the menu:
+- Choose one or more fonts (by index/number) to install
+- Hit Return/Enter to install the selected fonts
+- Type 'q' to quit
+
+To install fonts directly:
+- Get the exact name of a font from the menu
+- Use 'getnf -i "<font-name>"' to install a font
+- Use 'getnf -i "<name1>,<name2>"' to install multiple fonts${RESET}
+EOF
 }
 
 # Setting flags
