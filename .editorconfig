@@ -1,0 +1,21 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+
+shell_variant = bash
+# Switch cases will be indented
+switch_case_indent = true
+# Redirect operators will be followed by a space
+space_redirects = true
+# Keep column alignment paddings
+#keep_padding = true
+# Binary ops like && and | may start a line
+#binary_next_line = true
+
+[*.md]
+trim_trailing_whitespace = false
