@@ -153,9 +153,15 @@ font_url_exists() {
 	curl --output /dev/null --silent --head --fail "$url" && return 0 || return 1
 }
 
+direct_install() {
+	for font_name in $(echo "$1" | tr ',' ' '); do
+		if font_url_exists "$font_name"; then
+			SELECTED_FONTS+=("$font_name")
 		else
+			error "Invalid font name: $font_name. Try again."
 		fi
 	done
+}
 
 post_install() {
 	# Update the fonts cache
@@ -269,6 +275,7 @@ main() {
 			h) usage && exit 0 ;;
 			k) keepZipFiles="True" ;;
 			f) force_update="True" ;;
+			i) FONTNAMES="$OPTARG" ;;
 			:) error "Option '-$OPTARG' requires at least one font name." ;;
 			*) usage && exit 0 ;;
 		esac
