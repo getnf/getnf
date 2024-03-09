@@ -19,7 +19,6 @@ force_update="False"
 # Set colors
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
-BLUE=$(tput setaf 4)
 RESET=$(tput sgr0)
 
 # For Macs, need to set a few different things
@@ -31,7 +30,7 @@ fi
 # Help message
 usage() {
     cat << EOF
-${BLUE}getNF: A Better way to install NerdFonts
+getNF: A Better way to install NerdFonts
 
 Usage:
   getnf [options]
@@ -50,12 +49,12 @@ To install fonts using the menu:
 To install fonts directly:
 - Get the exact name of a font from the menu
 - Use 'getnf -i "<font-name>"' to install a font
-- Use 'getnf -i "<name1>,<name2>"' to install multiple fonts${RESET}
+- Use 'getnf -i "<name1>,<name2>"' to install multiple fonts
 EOF
 }
 
 info() {
-    printf "${BLUE}%b${RESET}\n" "$1"
+    printf "%b\n" "$1"
 }
 
 confirm() {
@@ -249,7 +248,7 @@ menu_install() {
 
     # Handle user input
     while true; do
-        read -rp "${BLUE}Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5):${RESET} " choices
+        read -rp "Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5): " choices
         for choice in $(echo "$choices" | tr ',' ' '); do
             if [[ $choice == "q" ]]; then
                 confirm "Goodbye!"
