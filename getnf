@@ -54,7 +54,7 @@ EOF
 }
 
 info() {
-    printf "%b\n" "$1"
+    printf "%s\n" "$1"
 }
 
 confirm() {
