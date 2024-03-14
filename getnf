@@ -10,9 +10,9 @@ down_dir="$HOME/share/termux-nf/Downloads"
 cache_dir="/data/data/com.termux/cache"
 update_fonts="False"
 force_update="False"
-sUnzip=$(whereis unzip | awk -F' ' '{print $2}')
+isUnzip=$(whereis unzip | awk -F' ' '{print $2}')
 isCurl=$(whereis curl | awk -F' ' '{print $2}')
-TERMUX_DIR="$HOME/.termux"
+TERMUX_DIR="$HOME/.termux/font.ttf"
 
 # Set colors
 RED=$(tput setaf 1)
@@ -214,22 +214,62 @@ if [ "$aFontInstalled" = "True" ]; then
 fi
 
 # Applying font on termux
-function termux {
-	
-	shopt -s nullglob
-	for ((i=0; i<${#(dist_dir)[@]}; i++)); do
-		echo "${(dist_dir)[$i]}"
-	done
-	read -p "${BLUE}Enter font number(s) (e.g. 1,2,3):${RESET} " i
-	echo "${BLUE}There are ${#array[@]} dirs in the current path ${RESET}"; \
-	select dir in "${array[@]}"; do cd "${dir}"; break; done
-	for ((i=0; i<${#(dir)[@]}; i++)); do
-		echo "${(dir)[$i]}"
-	read -p "${BLUE}Enter font number(s) (e.g. 1,2,3):${RESET} " i
+termux() {
+    cd $dist_dir
+    arrange_files() {
+		
+    		# Check if any .ttf files exist
+        if ls *.ttf 1>/dev/null 2>&1; then
+        # List only .ttf files if they exist
+            files=(*.ttf)
+        else
+        # Otherwise, list all files
+            files=(*)
+        fi
 
-	echo "    ${BLUE}[${RED}*${BLUE}] ${MAGENTA}Reloading Settings..."
+    		# List the files numerically
+    		echo "${BLUE}List of Installed Fonts:${RESET}"
+    		for i in "${!files[@]}"; do
+        echo "${BLUE}$((i+1)). ${files[$i]}${RESET}"
+    		done
+}
+
+# activating the function
+arrange_files
+
+select_file() {
+    # Prompt the user to select a file
+    read -p "${BLUE}Enter the number of the file:${RESET} " choice
+
+    # Validate the user input
+    if [[ $choice =~ ^[0-9]+$ ]] && [ $choice -ge 1 ] && [ $choice -le ${#files[@]} ]; then
+        selected_file="${files[$((choice-1))]}"
+
+        # Check if the selected file is a directory
+        if [ -d "$selected_file" ]; then
+            cd "$selected_file" || { echo "${RED}Failed to enter directory $selected_file"${RESET}; exit 1; }
+            arrange_files   # Arrange files in the selected directory
+            select_file     # Prompt the user to select a file again
+        else
+            cp "$selected_file" "$TERMUX_DIR" || { echo "${RED}Failed to apply font"${RESET}; exit 1; }
+						echo "${GREEN}Font Applied.${RESET}"
+        fi
+    else
+        echo "${RED}Invalid choice. Please enter a valid number.${RESET}"
+        select_file
+    fi
+}
+
+# activating the function
+select_file
+
+echo "    ${BLUE}[${RED}*${BLUE}] ${MAGENTA}Reloading Settings..."
     	am broadcast --user 0 -a com.termux.app.reload_style com.termux > /dev/null
     	{ echo "    ${BLUE}[${RED}*${BLUE}] ${GREEN}Applied Successfully."; echo; }
 		
-		
 echo "${GREEN}Enjoy your new fonts!${RESET}"
+
+}
+
+# calling the function
+termux
