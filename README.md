@@ -34,9 +34,10 @@ unless there is a new version of Nerd Fonts.
 You can force reinstalling a font by using the `-f` flag.
 
 If you know the exact font you want to install,
-you can do it directly with `getnf -i <font-name>`.
+you can do it directly with `getnf -i <font-name>`.<br>
 Use `getnf -i <name1>,<name2>` or `getnf -i "<name1> <name2>"`
-to install multiple fonts. You can get the names of the fonts from the menu.
+to install multiple fonts.<br>
+You can get the names of the fonts from the menu.
 
 Enjoy!
 
