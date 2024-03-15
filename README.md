@@ -4,10 +4,10 @@
 
 ### Dependencies
 
-- curl
-- fontconfig
-- ncurses
-- unzip
+-   curl
+-   fontconfig
+-   ncurses
+-   unzip
 
 ### Installation
 
@@ -17,14 +17,22 @@ curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
 
 Make sure that `~/.local/bin` is in your PATH.
 
+#### Arch Linux
+
+Arch linux users can install the package from the AUR:
+
+```
+yay -S getnf
+```
+
 ### Usage
 
 Run `getnf -h` to get a help message.
 
-- run `getnf` from the terminal and it will present you with a list of Nerd Fonts
-- choose one or more fonts (by index/number) to install
-- hit Return/Enter to install the selected fonts
-- type 'q' to quit
+-   run `getnf` from the terminal and it will present you with a list of Nerd Fonts
+-   choose one or more fonts (by index/number) to install
+-   hit Return/Enter to install the selected fonts
+-   type 'q' to quit
 
 By default the downloaded zip files are removed,
 use the `-k` flag to keep the zip files in the downloads directory.
@@ -44,6 +52,7 @@ Enjoy!
 ### Notes
 
 You can suppress the installation output with a flag `--silent` or `-s`:
+
 ```
 curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --silent
 ```
