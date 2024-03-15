@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #defining variables
 PREFIX='/data/data/com.termux/files/usr'

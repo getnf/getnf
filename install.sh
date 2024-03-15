@@ -2,7 +2,7 @@
 
 PREFIX='/data/data/com.termux/files/usr'
 DEST="$PREFIX/bin"
-GETNFLOC="$DEST/termux-nf"
+GETNFLOC="$DEST/getnf"
 
 GREEN=$(tput setaf 2)
 BLUE=$(tput setaf 4)
@@ -13,7 +13,6 @@ SILENT=$([[ "$1" == "-s" ]] || [[ "$1" == "--silent" ]] && echo true || echo fal
 
 $SILENT || echo "${BLUE}Installing termux-nf...${RESET}"
 
-mkdir -p "$DEST"
 rm -f "$GETNFLOC"
 
 if $SILENT; then
