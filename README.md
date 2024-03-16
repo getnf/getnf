@@ -17,6 +17,13 @@ curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
 
 Make sure that `~/.local/bin` is in your PATH.
 
+#### Arch Linux
+
+Arch linux users can install the package from the AUR:
+```
+yay -S getnf
+```
+
 ### Usage
 
 Run `getnf -h` to get a help message.
