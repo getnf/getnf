@@ -269,6 +269,62 @@ menu_install() {
     done
 }
 
+# Applying font on termux
+termux() {
+    cd $dist_dir
+    arrange_files() {
+
+    	# Check if any .ttf files exist
+        if ls *.ttf 1>/dev/null 2>&1; then
+        # List only .ttf files if they exist
+            files=(*.ttf)
+        else
+        # Otherwise, list all files
+            files=(*)
+        fi
+
+    		# List the files numerically
+    		echo "${BLUE}List of Installed Fonts:${RESET}"
+    		for i in "${!files[@]}"; do
+        echo "${BLUE}$((i+1)). ${files[$i]}${RESET}"
+    		done
+}
+
+# activating the function
+arrange_files
+
+select_file() {
+    # Prompt the user to select a file
+    read -p "${BLUE}Enter the number of the file:${RESET} " choice
+
+    # Validate the user input
+    if [[ $choice =~ ^[0-9]+$ ]] && [ $choice -ge 1 ] && [ $choice -le ${#files[@]} ]; then
+        selected_file="${files[$((choice-1))]}"
+
+        # Check if the selected file is a directory
+        if [ -d "$selected_file" ]; then
+            cd "$selected_file" || { echo "${RED}Failed to enter directory $selected_file"${RESET}; exit 1; }
+            arrange_files   # Arrange files in the selected directory
+            select_file     # Prompt the user to select a file again
+        else
+            cp "$selected_file" "$HOME/.termux/font.ttf" || { echo "${RED}Failed to apply font"${RESET}; exit 1; }
+						echo "${GREEN}Font Applied.${RESET}"
+        fi
+    else
+        echo "${RED}Invalid choice. Please enter a valid number.${RESET}"
+        select_file
+    fi
+}
+
+# activating the function
+select_file
+
+echo "    ${BLUE}[${RED}*${BLUE}] ${BLUE}Reloading Settings..."
+    	am broadcast --user 0 -a com.termux.app.reload_style com.termux > /dev/null
+    	{ echo "    ${BLUE}[${RED}*${BLUE}] ${GREEN}Applied Successfully."; echo; }
+
+}
+
 main() {
     # Setting flags
     while getopts ":hkfi:" option; do
@@ -309,6 +365,11 @@ main() {
     # If a font was installed
     if [[ "$aFontInstalled" == "True" ]]; then
         post_install
+    fi
+
+    # To check if Termux is being used
+    if [ $(ps -ef| grep -c com.termux) -gt 0 ]; then
+        termux
     fi
 }
 
