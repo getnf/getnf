@@ -1,224 +1,280 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-#defining variables
-PREFIX='/data/data/com.termux/files/usr'
+# shellcheck disable=SC2164
+
+# Defining variables
 nerdfontsrepo='https://api.github.com/repos/ryanoasis/nerd-fonts'
+dist_dir="$HOME/.local/share/fonts"
+down_dir="$(command -v xdg-user-dir > /dev/null && xdg-user-dir DOWNLOAD || echo "$HOME/Downloads")/NerdFonts"
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/nerdFonts"
+# Set the name of the file to store the release number
+release_file="$cache_dir/release.txt"
+# Define a file for the installed fonts names to be stored in
+installed_fonts_file="$cache_dir/installed.txt"
 aFontInstalled="False"
-removeZipFiles="True"
-dist_dir="$PREFIX/share/termux-nf/fonts"
-down_dir="$HOME/share/termux-nf/Downloads"
-cache_dir="/data/data/com.termux/cache"
+keepZipFiles="False"
 update_fonts="False"
 force_update="False"
-isUnzip=$(whereis unzip | awk -F' ' '{print $2}')
-isCurl=$(whereis curl | awk -F' ' '{print $2}')
-TERMUX_DIR="$HOME/.termux/font.ttf"
 
 # Set colors
 RED=$(tput setaf 1)
 GREEN=$(tput setaf 2)
-BLUE=$(tput setaf 4)
 RESET=$(tput sgr0)
 
-# help message
+# For Macs, need to set a few different things
+if [[ "$(uname)" == "Darwin" ]]; then
+    dist_dir="$HOME/Library/Fonts"
+    cache_dir="$HOME/Library/Caches/NerdFonts"
+fi
+
+# Help message
 usage() {
-	echo "${BLUE}termux-nf: A Better way to install NerdFonts for termux${RESET}"
-	echo ""
-	echo "${BLUE}Usage:${RESET}"
-	echo "${BLUE}-h print this help message and exit"
-	echo "-f force reinstall an already installed font"
-	echo "-k Keep the downloaded fonts zip files${RESET}"
-	echo ""
-	echo "- ${BLUE}Choose one or more fonts (by index/number) to install"
-	echo "- Hit Return/Enter to install the selected fonts"
-	echo "- Type 'q' to quit${RESET}"
-	echo ""
+    cat << EOF
+getNF: A Better way to install NerdFonts
+
+Usage:
+  getnf [options]
+
+OPTIONS:
+  -h		  print this help message and exit
+  -f		  force reinstall an already installed font
+  -k		  keep the downloaded fonts zip files
+  -i <font>   directly install the specified fonts
+
+To install fonts using the menu:
+- Choose one or more fonts (by index/number) to install
+- Hit Return/Enter to install the selected fonts
+- Type 'q' to quit
+
+To install fonts directly:
+- Get the exact name of a font from the menu
+- Use 'getnf -i "<font-name>"' to install a font
+- Use 'getnf -i "<name1>,<name2>"' to install multiple fonts
+EOF
 }
 
-# Setting flags
-while getopts :hkf option; do
-	case "${option}" in
-	h) usage && exit 0 ;;
-	k) removeZipFiles="False" ;;
-	f) force_update="True" ;;
-	*) usage && exit 0 ;;
-	esac
-done
-
-# Check if dependencies exist
-[ -z "$isUnzip" ] && echo "${RED}Dependency unzip is not installed on your system.${RESET}" && exit
-[ -z "$isCurl" ] && echo "${RED}Dependency curl is not installed on your system.${RESET}" && exit
-
-# Check if the distDir and downDir exists, if it doesn't, create it
-[ -d "$dist_dir" ] && echo "${BLUE}Fonts directory exists, good.${RESET}" || (mkdir -p "$dist_dir" && echo "${GREEN}Created the fonts directory.${RESET}")
-[ -d "$down_dir" ] && echo "${BLUE}Fonts download directory exists, good.${RESET}" || (mkdir -p "$down_dir" && echo "${GREEN}Created fonts download directory..${RESET}")
-[ -d "$cache_dir" ] || mkdir -p "$cache_dir"
-
-## Handle release version
-# Set the name of the file to store the release number
-release_file="$cache_dir/release.txt"
-# Get the local release version
-[ -f "$release_file" ] && cached_release=$(cat "$release_file") || cached_release=""
-# Get the latest release number from NerdFonts github repo
-release=$(curl --silent "$nerdfontsrepo/releases/latest" |
-	awk -v RS=',' -F'"' '/tag_name/ {print $4}')
-# Compare the latest release number with the cached release number
-if [ "$release" != "$cached_release" ]; then
-	update_fonts=True
-	# Update the cached release number
-	echo "$release" >"$release_file"
-fi
-
-## Handle the font names
-# Download the file list and extract the font names
-font_list=$(curl -s "$nerdfontsrepo/contents/patched-fonts?ref=master" |
-	awk -v RS=',' -F'"' '/name/ {print $4}')
-# Convert the list of fonts into an array of fonts
-declare -a fonts
-# Read the input string and populate the array, we do this to get rid of the `readarray` command
-while IFS= read -r line; do
-	fonts+=("$line")
-done <<<"$font_list"
-#define a file for the installed fonts names to be stored in
-installed_fonts_file="$cache_dir/installed.txt"
-[ -f "$installed_fonts_file" ] && installed_fonts_list=$(cat "$installed_fonts_file") || installed_fonts_list=()
-# Convert the list of installed fonts into an array of fonts
-declare -a installed_fonts
-while IFS= read -r line; do
-	installed_fonts+=("$line")
-done <<<"$installed_fonts_list"
-# a list of currently selectd fonts
-selected_fonts=()
-
-# Remove installed fonts from the list of all fonts if there is no new release
-if [[ $update_fonts = "False" ]]; then
-	available_fonts=()
-	for font in "${fonts[@]}"; do
-		if [[ ! " ${installed_fonts[@]} " =~ " ${font} " ]]; then
-			available_fonts+=("$font")
-		fi
-	done
-else
-	echo "" >"$installed_fonts_file"
-	available_fonts=("${fonts[@]}")
-fi
-
-function download_font() {
-	echo "${BLUE}$1 download started...${RESET}"
-	curl -LJO# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$1.zip"
-	echo "${GREEN}$1 download finished${RESET}"
+info() {
+    printf "%s\n" "$1"
 }
 
-function install_font() {
-    echo "${BLUE}$1 installation started...${RESET}"
-	unzip -qqo "$1.zip" -d "$dist_dir/$1"
-	echo "${GREEN}$1 installation finished${RESET}"
+confirm() {
+    printf "${GREEN}%b${RESET}\n" "$1"
 }
 
-function remove_zip_files() {
-	echo "${BLUE}Removing downloaded zip files from $down_dir...${RESET}"
-	for font in "${selected_fonts[@]}"; do
-		rm "$down_dir/$font.zip"
-	done
-	echo "${GREEN}Downloaded zip files removal suceeded!${RESET}"
+alert() {
+    printf "${RED}%b${RESET}\n" "$1"
 }
 
-# Remove already selected fonts from the menu
-if [ $force_update = "True" ]; then
-	font_options=("${fonts[@]}")
-else
-	font_options=("${available_fonts[@]}")
-fi
-
-# Define function to print menu
-function menu {
-	echo "${BLUE}Select one or more fonts:${RESET}"
-	(for i in "${!font_options[@]}"; do
-		printf "%d) %s\n" "$((i + 1))" "${font_options[$i]}"
-	done && printf "q) Quit\n") | pr -3 -t -w "$(tput cols)"
+error() {
+    alert "$1" >&2
+    exit 1
 }
 
-# call the menu funciton to list the available fonts
-menu
+ensure_installed() {
+    if ! command -v "$1" > /dev/null; then
+        error "Dependency $1 is not installed on your system."
+    fi
+}
+
+create_dir() {
+    if [[ -d "$1" ]]; then
+        info "$2 directory exists, good."
+    else
+        mkdir -p "$1"
+        confirm "Created the $2 directory."
+    fi
+}
+
+check_dependencies() {
+    # Check if dependencies exist
+    ensure_installed unzip
+    ensure_installed curl
+
+    # Check if the distDir and downDir exist, if they don't, create them
+    create_dir "$dist_dir" "Fonts"
+    create_dir "$down_dir" "Fonts Download"
+    [[ -d "$cache_dir" ]] || mkdir -p "$cache_dir"
+}
+
+handle_release_version() {
+    # Get the local release version
+    [[ -f "$release_file" ]] && cached_release=$(cat "$release_file")
+    # Get the latest release number from NerdFonts github repo
+    release=$(curl --silent "$nerdfontsrepo/releases/latest" |
+        awk -v RS=',' -F'"' '/tag_name/ {print $4}')
+    # Compare the latest release number with the cached release number
+    if [[ "$release" != "$cached_release" ]]; then
+        update_fonts=True
+        # Update the cached release number
+        echo "$release" > "$release_file"
+    fi
+}
+
+download_font() {
+    info "$1 download started..."
+    curl -LJO# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$1.zip"
+    confirm "$1 download finished"
+}
+
+extract_font() {
+    info "$1 installation started..."
+    unzip -qqo "$1.zip" -d "$dist_dir/$1"
+    confirm "$1 installation finished"
+}
+
+remove_zip_files() {
+    info "Removing downloaded zip files from $down_dir..."
+    for font in "${SELECTED_FONTS[@]}"; do
+        rm "$down_dir/$font.zip"
+    done
+    confirm "Downloaded zip files removal succeeded!"
+}
+
+update_font_cache() {
+    info "Updating fc-cache..."
+    fc-cache -f 2>&1
+    confirm "fc-cache: update succeeded!"
+}
+
+install_font() {
+    pushd "$down_dir" > /dev/null
+    # Remove the zip file of the download font if it exists due to curl not having an overwrite function
+    if [[ -f "$down_dir/$1.zip" ]]; then
+        rm "$down_dir/$1.zip"
+    fi
+    download_font "$1" &&
+        extract_font "$1" &&
+        echo "$1" >> "$installed_fonts_file"
+    aFontInstalled="True"
+    popd > /dev/null
+}
+
+font_url_exists() {
+    url="https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$1.zip"
+    curl --output /dev/null --silent --head --fail "$url" && return 0 || return 1
+}
+
+direct_install() {
+    for font_name in $(echo "$1" | tr ',' ' '); do
+        if font_url_exists "$font_name"; then
+            SELECTED_FONTS+=("$font_name")
+        else
+            error "Invalid font name: $font_name. Try again."
+        fi
+    done
+}
+
+post_install() {
+    # Update the fonts cache
+    update_font_cache
+    # Remove downloaded archives if the option -k was not passed
+    if [[ "$keepZipFiles" == "False" ]]; then
+        remove_zip_files
+    else
+        confirm "The downloaded zip files can be found in $down_dir"
+    fi
+    confirm "Enjoy your new fonts!"
+}
+
+menu() {
+    local options=("$@")
+    info "Select one or more fonts:"
+    (
+        for i in "${!options[@]}"; do
+            printf "%d) %s\n" "$((i + 1))" "${options[$i]}"
+        done
+        printf "q) Quit\n"
+    ) | pr -3 -t -w "$(tput cols)"
+}
 
 # Parse input like 1-3
-function parse_range {
-	if ! [[ $1 =~ ^[0-9]+-[0-9]+$ ]]; then
-		echo "${RED}Invalid input format: $1. Expected format: X-Y.${RESET}"
-		return 1
-	fi
-	IFS='-' read -ra range <<<"$1"
-	range_start=${range[0]}
-	range_end=${range[1]}
-	for ((i = range_start; i <= range_end; i++)); do
-		index=$((i - 1))
-		if ((index >= 0 && index < ${#font_options[@]})); then
-			selected_fonts[index]=${font_options[index]}
-		else
-			echo "${RED}Invalid option: $i. Try again.${RESET}"
-			return 1
-		fi
-	done
+parse_range() {
+    if ! [[ $1 =~ ^[0-9]+-[0-9]+$ ]]; then
+        alert "Invalid input format: $1. Expected format: X-Y."
+        return 1
+    fi
+    IFS='-' read -ra range <<< "$1"
+    range_start=${range[0]}
+    range_end=${range[1]}
+    for ((i = range_start; i <= range_end; i++)); do
+        index=$((i - 1))
+        if ((index >= 0 && index < ${#font_options[@]})); then
+            SELECTED_FONTS[index]=${font_options[index]}
+        else
+            alert "Invalid option: $i. Try again."
+            return 1
+        fi
+    done
 }
 
-## Handle user input
-for file in "$dir"/*; do
-	read -p "${BLUE}Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5):${RESET} " choices
-	for choice in $(echo "$choices" | tr ',' ' '); do
-		if [[ $choice == "q" ]]; then
-			echo "${GREEN}Goodbye!${RESET}"
-			exit
-		# check if they entered a range (e.g. 1-3)
-		elif [[ $choice == *-* ]]; then
-			parse_range "$choice" || continue 2
-		elif ((choice >= 1 && choice <= ${#font_options[@]})); then
-			index=$((choice - 1))
-			selected_fonts[index]=${font_options[index]}
-		else
-			echo "${RED}Invalid option: $choice. Try again.${RESET}"
-			continue 2
-		fi
-	done
-	break
-done
+menu_install() {
+    # Download the file list and extract the font names
+    font_list=$(curl -s "$nerdfontsrepo/contents/patched-fonts?ref=master" |
+        awk -v RS=',' -F'"' '/name/ {print $4}')
+    # Convert the list of fonts into an array of fonts
+    declare -a all_fonts
+    # Read the input string and populate the array
+    #mapfile -t all_fonts <<< "$font_list"
+    while IFS= read -r line; do
+        all_fonts+=("$line")
+    done <<< "$font_list"
 
-# loop over the selected fonts and download them
-if ((${#selected_fonts[@]} > 0)); then
-	for i in "${selected_fonts[@]}"; do
-		pushd "$down_dir" >/dev/null
-		# remove the zip file of the download font if it exists, this is due to curl not having an overwrite function
-		if [ -f "$down_dir/$i.zip" ]; then
-			rm "$down_dir/$i.zip"
-		fi
-		download_font "$i" &&
-			install_font "$i" &&
-			echo "$i" >>"$installed_fonts_file"
-		aFontInstalled=True
-		popd >/dev/null
-	done
-else
-	echo "${RED}No fonts were selected, exiting.${RESET}"
-	exit
-fi
+    # Get the list of installed fonts
+    if [[ -f "$installed_fonts_file" ]]; then
+        installed_font_list=$(cat "$installed_fonts_file")
+        # Convert the list of installed fonts into an array of fonts
+        declare -a installed_fonts
+        while IFS= read -r line; do
+            installed_fonts+=("$line")
+        done <<< "$installed_font_list"
+    fi
 
-# If a font was installed
-if [ "$aFontInstalled" = "True" ]; then
-	# Update the fonts cache
-	update_fonts_cache
-	# remove downloaded archives if the option -k was not passed
-	if [ "$removeZipFiles" = "True" ]; then
-		remove_zip_files
-	else
-		echo "${GREEN}The downloaded zip files can be found in $down_dir${RESET}"
-	fi
-fi
+    # Remove installed fonts from the list of all fonts if there is no new release
+    # or if the user does not want to force the update
+    if [[ "$update_fonts" == "False" && "$force_update" == "False" ]]; then
+        declare -a font_options
+        for font in "${all_fonts[@]}"; do
+            if [[ " ${installed_fonts[*]} " != *" $font "* ]]; then
+                font_options+=("$font")
+            fi
+        done
+    else
+        echo "" > "$installed_fonts_file"
+        font_options=("${all_fonts[@]}")
+    fi
+
+    # Call the menu function to list the available fonts
+    menu "${font_options[@]}"
+
+    # Handle user input
+    while true; do
+        read -rp "Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5): " choices
+        for choice in $(echo "$choices" | tr ',' ' '); do
+            if [[ $choice == "q" ]]; then
+                confirm "Goodbye!"
+                exit
+            # Choice is a range (e.g. 1-3)
+            elif [[ $choice == *-* ]]; then
+                parse_range "$choice" || continue 2
+            elif ((choice >= 1 && choice <= ${#font_options[@]})); then
+                index=$((choice - 1))
+                SELECTED_FONTS[index]=${font_options[index]}
+            else
+                alert "Invalid option: $choice. Try again."
+                continue 2
+            fi
+        done
+        echo "Selected fonts: ${SELECTED_FONTS[*]}"
+        break
+    done
+}
 
 # Applying font on termux
 termux() {
     cd $dist_dir
     arrange_files() {
-		
-    		# Check if any .ttf files exist
+
+    	# Check if any .ttf files exist
         if ls *.ttf 1>/dev/null 2>&1; then
         # List only .ttf files if they exist
             files=(*.ttf)
@@ -251,7 +307,7 @@ select_file() {
             arrange_files   # Arrange files in the selected directory
             select_file     # Prompt the user to select a file again
         else
-            cp "$selected_file" "$TERMUX_DIR" || { echo "${RED}Failed to apply font"${RESET}; exit 1; }
+            cp "$selected_file" "$HOME/.termux/font.ttf" || { echo "${RED}Failed to apply font"${RESET}; exit 1; }
 						echo "${GREEN}Font Applied.${RESET}"
         fi
     else
@@ -263,13 +319,58 @@ select_file() {
 # activating the function
 select_file
 
-echo "    ${BLUE}[${RED}*${BLUE}] ${MAGENTA}Reloading Settings..."
+echo "    ${BLUE}[${RED}*${BLUE}] ${BLUE}Reloading Settings..."
     	am broadcast --user 0 -a com.termux.app.reload_style com.termux > /dev/null
     	{ echo "    ${BLUE}[${RED}*${BLUE}] ${GREEN}Applied Successfully."; echo; }
-		
-echo "${GREEN}Enjoy your new fonts!${RESET}"
 
 }
 
-# calling the function
-termux
+main() {
+    # Setting flags
+    while getopts ":hkfi:" option; do
+        case "${option}" in
+            h) usage && exit 0 ;;
+            k) keepZipFiles="True" ;;
+            f) force_update="True" ;;
+            i) FONTNAMES="$OPTARG" ;;
+            :) error "Option '-$OPTARG' requires at least one font name." ;;
+            *) usage && exit 0 ;;
+        esac
+    done
+    # Shift parsed options
+    shift $((OPTIND - 1))
+
+    check_dependencies
+    handle_release_version
+
+    # List of selected fonts
+    declare -a SELECTED_FONTS
+
+    # Put the selected fonts into the list
+    if [[ -n "$FONTNAMES" ]]; then
+        direct_install "$FONTNAMES"
+    else
+        menu_install
+    fi
+
+    # Loop over the selected fonts and download them
+    if ((${#SELECTED_FONTS[@]} > 0)); then
+        for i in "${SELECTED_FONTS[@]}"; do
+            install_font "$i"
+        done
+    else
+        error "No fonts were selected, exiting."
+    fi
+
+    # If a font was installed
+    if [[ "$aFontInstalled" == "True" ]]; then
+        post_install
+    fi
+
+    # To check if Termux is being used
+    if [ $(ps -ef| grep -c com.termux) -gt 0 ]; then
+        termux
+    fi
+}
+
+main "$@"

@@ -1,18 +1,21 @@
-# termux-nf
+# getNF
 
 ## A better way to install NerdFonts
 
 ### Dependencies
 
-```
-pkg install curl ncurses-utils zip
-```
+- curl
+- fontconfig
+- ncurses
+- unzip
 
 ### Installation
 
 ```
-curl -fsSL https://raw.githubusercontent.com/arnavgr/termux-nf/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
 ```
+
+Make sure that `~/.local/bin` is in your PATH.
 
 ### Usage
 
@@ -30,11 +33,17 @@ By default, the already installed fonts are not listed in the select menu,
 unless there is a new version of Nerd Fonts.
 You can force reinstalling a font by using the `-f` flag.
 
+If you know the exact font you want to install,
+you can do it directly with `getnf -i <font-name>`.<br>
+Use `getnf -i <name1>,<name2>` or `getnf -i "<name1> <name2>"`
+to install multiple fonts.<br>
+You can get the names of the fonts from the menu.
+
 Enjoy!
 
 ### Notes
 
 You can suppress the installation output with a flag `--silent` or `-s`:
 ```
-curl -fsSL https://raw.githubusercontent.com/arnavgr/termux-nf/master/install.sh | bash -s -- --silent
+curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --silent
 ```
