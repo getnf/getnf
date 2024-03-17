@@ -6,8 +6,6 @@
 
 - curl
 - fontconfig
-- ncurses
-- unzip
 
 ### Installation
 
@@ -19,7 +17,7 @@ Make sure that `~/.local/bin` is in your PATH.
 
 #### Arch Linux
 
-Arch linux users can install the package from the AUR:
+Arch Linux users can install the package from the [AUR](https://aur.archlinux.org/packages/getnf):
 ```
 yay -S getnf
 ```
