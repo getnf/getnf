@@ -15,9 +15,12 @@ keepFontArchives="False"
 update_fonts="False"
 force_update="False"
 
-RED=$(tput setaf 1)
-GREEN=$(tput setaf 2)
-RESET=$(tput sgr0)
+if command -v tput > /dev/null; then
+    # tput is part of the ncurses package
+    RED=$(tput setaf 1)
+    GREEN=$(tput setaf 2)
+    RESET=$(tput sgr0)
+fi
 
 # Mac OS
 if [[ "$(uname)" == "Darwin" ]]; then
