@@ -115,7 +115,8 @@ download_font() {
 
 extract_font() {
     info "$1 installation started..."
-    tar -xf "$1.tar.xz" -C "$dist_dir" --one-top-level
+    mkdir -p "$dist_dir/$1"
+    tar -xf "$1.tar.xz" -C "$dist_dir/$1"
     confirm "$1 installation finished"
 }
 
