@@ -4,13 +4,21 @@
 
 ### Dependencies
 
-- curl
+- curl or wget
 - fontconfig
 
 ### Installation
 
+using curl:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh)
 ```
-curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
+
+or using wget:
+
+```bash
+bash <(wget -qO- https://raw.githubusercontent.com/getnf/getnf/main/install.sh)
 ```
 
 Make sure that `~/.local/bin` is in your PATH.
