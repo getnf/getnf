@@ -107,8 +107,16 @@ create_dir() {
     fi
 }
 
+verify_internet_access() {
+    if ! curl --silent --head --fail "$NERDFONTSAPI" > /dev/null; then
+        alert "Couldn't connect to the NerdFont API." >&2
+        error "Most likely the internet connection is not working."
+    fi
+}
+
 check_dependencies() {
     ensure_installed curl
+    verify_internet_access
     create_dir "$DIST_DIR" "Fonts"
     create_dir "$DOWN_DIR" "Fonts Download"
     [[ -d "$FONT_RELEASES_DIR" ]] || mkdir -p "$FONT_RELEASES_DIR"
@@ -484,6 +492,11 @@ handle_user_input() {
     done
 }
 
+#######################################
+# Run the nerd font installation menu
+# Arguments:
+#   None
+#######################################
 menu_install() {
     get_all_fonts
     get_installed_fonts
