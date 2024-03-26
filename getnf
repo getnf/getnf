@@ -114,6 +114,17 @@ check_dependencies() {
     [[ -d "$FONT_RELEASES_DIR" ]] || mkdir -p "$FONT_RELEASES_DIR"
 }
 
+#######################################
+# Create the global RELEASE with the latest release version and
+# save it in the RELEASE_FILE. If there's a new release available,
+# set NEW_RELEASE_AVAILABLE to true.
+# Globals:
+#   NERDFONTSAPI
+#   RELEASE_FILE
+#   NEW_RELEASE_AVAILABLE
+# Arguments:
+#   None
+#######################################
 get_latest_release_version() {
     RELEASE=$(curl --silent "$NERDFONTSAPI/releases/latest" |
         awk -v RS=',' -F'"' '/tag_name/ {print $4}')
@@ -126,6 +137,16 @@ get_latest_release_version() {
     echo "$RELEASE" > "$RELEASE_FILE"
 }
 
+#######################################
+# Check if the font version is saved and is the latest
+# Globals:
+#   FONT_RELEASES_DIR
+#   RELEASE
+# Arguments:
+#   Font name
+# Returns:
+#   0 if font is of the latest version, 1 otherwise
+#######################################
 is_latest_version() {
     local font_release_file="$FONT_RELEASES_DIR/${1}_release.txt"
     if [[ -f "$font_release_file" ]]; then
@@ -137,6 +158,14 @@ is_latest_version() {
     return 1
 }
 
+#######################################
+# Create a local file with all fonts from the NerdFonts repo.
+# We can do this since the list doesn't change often.
+# Globals:
+#   NERDFONTSAPI
+# Arguments:
+#   None
+#######################################
 create_all_fonts_file() {
     local font_list
     font_list=$(curl -s "$NERDFONTSAPI/contents/patched-fonts?ref=master" |
@@ -144,6 +173,13 @@ create_all_fonts_file() {
     echo "$font_list" > "$ALL_FONTS_FILE"
 }
 
+#######################################
+# Create the global array ALL_FONTS with all fonts from the NerdFonts repo
+# Globals:
+#   ALL_FONTS_FILE
+# Arguments:
+#   None
+#######################################
 get_all_fonts() {
     if [[ ! -f "$ALL_FONTS_FILE" || "$NEW_RELEASE_AVAILABLE" == "true" ]]; then
         create_all_fonts_file
@@ -155,6 +191,14 @@ get_all_fonts() {
     done < "$ALL_FONTS_FILE"
 }
 
+#######################################
+# Create the global array INSTALLED_FONTS
+# Globals:
+#   DIST_DIR
+#   ALL_FONTS
+# Arguments:
+#   None
+#######################################
 get_installed_fonts() {
     # list all fonts in DIST_DIR
     local installed_user_fonts=("$DIST_DIR"/*)
@@ -170,6 +214,17 @@ get_installed_fonts() {
     done
 }
 
+#######################################
+# Create the global FONT_OPTIONS array by removing installed fonts
+# from the list of all fonts if they are from current release
+# or if the user does not want to force the update
+# Globals:
+#   FORCE_FONT_UPDATE
+#   ALL_FONTS
+#   INSTALLED_FONTS
+# Arguments:
+#   None
+#######################################
 filter_installed_fonts() {
     if [[ "$FORCE_FONT_UPDATE" == "false" ]]; then
         declare -ag FONT_OPTIONS
@@ -184,12 +239,27 @@ filter_installed_fonts() {
     fi
 }
 
+#######################################
+# Download the font archive
+# Globals:
+#   NERDFONTSREPO
+#   RELEASE
+# Arguments:
+#   Font name
+#######################################
 download_font() {
     info "$1 download started..."
     curl -LJO# "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
     confirm "$1 download finished"
 }
 
+#######################################
+# Extract the font archive to the user fonts directory
+# Globals:
+#   DIST_DIR
+# Arguments:
+#   Font name
+#######################################
 extract_font() {
     info "$1 installation started..."
     mkdir -p "$DIST_DIR/$1"
@@ -197,10 +267,26 @@ extract_font() {
     confirm "$1 installation finished"
 }
 
+#######################################
+# Save the release version of the given font
+# Globals:
+#   RELEASE
+#   FONT_RELEASES_DIR
+# Arguments:
+#   Font name
+#######################################
 save_font_release() {
     echo "$RELEASE" > "$FONT_RELEASES_DIR/${1}_release.txt"
 }
 
+#######################################
+# Remove the downloaded font archives
+# Globals:
+#   DOWN_DIR
+#   SELECTED_FONTS
+# Arguments:
+#   None
+#######################################
 remove_font_archives() {
     info "Removing downloaded font archives from $DOWN_DIR..."
     for font in "${SELECTED_FONTS[@]}"; do
@@ -209,12 +295,26 @@ remove_font_archives() {
     confirm "Downloaded font archives removal succeeded!"
 }
 
+#######################################
+# Build font information cache files
+# Arguments:
+#   None
+#######################################
 update_font_cache() {
     info "Updating fc-cache..."
     fc-cache -f 2>&1
     confirm "fc-cache: update succeeded!"
 }
 
+#######################################
+# Install the selected font
+# Globals:
+#   DOWN_DIR
+#   INSTALLED_FONTS_FILE
+#   ANY_FONTS_INSTALLED
+# Arguments:
+#   Font name
+#######################################
 install_font() {
     pushd "$DOWN_DIR" > /dev/null
     # Remove the archive if it exists due to curl not having overwrite option
@@ -226,12 +326,30 @@ install_font() {
     popd > /dev/null
 }
 
+#######################################
+# Check if the font is a NerdFont by checking if the URL exists
+# Globals:
+#   NERDFONTSREPO
+#   RELEASE
+# Arguments:
+#   Font name
+# Returns:
+#   0 if font url exists, 1 otherwise
+#######################################
 font_url_exists() {
     local url="$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
     curl --output /dev/null --silent --head --fail "$url" && return 0
     return 1
 }
 
+#######################################
+# Parse the string of font names and add them
+# to SELECTED_FONTS if all of them are valid
+# Globals:
+#   SELECTED_FONTS
+# Arguments:
+#   String of font names
+#######################################
 direct_install() {
     for font_name in $(echo "$1" | tr ',' ' '); do
         if font_url_exists "$font_name"; then
@@ -242,6 +360,13 @@ direct_install() {
     done
 }
 
+#######################################
+# Update the font cache and remove font archives unless specified otherwise
+# Globals:
+#   KEEP_FONT_ARCHIVES
+# Arguments:
+#   None
+#######################################
 post_install() {
     update_font_cache
     if [[ "$KEEP_FONT_ARCHIVES" == "false" ]]; then
@@ -252,6 +377,14 @@ post_install() {
     confirm "Enjoy your new fonts!"
 }
 
+#######################################
+# Display installed fonts
+# Globals:
+#   INSTALLED_FONTS
+#   FONT_RELEASES_DIR
+# Arguments:
+#   None
+#######################################
 display_installed_fonts() {
     if [[ ${#INSTALLED_FONTS[@]} -ne 0 ]]; then
         echo ""
@@ -268,6 +401,14 @@ display_installed_fonts() {
     fi
 }
 
+#######################################
+# Display the font menu
+# Globals:
+#   RELEASE
+#   FONT_OPTIONS
+# Arguments:
+#   None
+#######################################
 display_font_menu() {
     echo ""
     info "NerdFonts ${RELEASE}:"
@@ -279,6 +420,17 @@ display_font_menu() {
     ) | pr -3 -t -w "$TERM_WIDTH"
 }
 
+#######################################
+# Parse input range of format *-* (e.g. 1-3) and
+# add the selected fonts to SELECTED_FONTS array
+# Globals:
+#   FONT_OPTIONS
+#   SELECTED_FONTS
+# Arguments:
+#   None
+# Returns:
+#   1 if input format is invalid or if the option is out of range
+#######################################
 parse_range() {
     if ! [[ $1 =~ ^[0-9]+-[0-9]+$ ]]; then
         alert "Invalid input format: $1. Expected format: X-Y."
@@ -299,6 +451,14 @@ parse_range() {
     done
 }
 
+#######################################
+# Get and parse user input and add the selected fonts to SELECTED_FONTS array
+# Globals:
+#   FONT_OPTIONS
+#   SELECTED_FONTS
+# Arguments:
+#   None
+#######################################
 handle_user_input() {
     while true; do
         local choices
