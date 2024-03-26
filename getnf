@@ -62,6 +62,7 @@ OPTIONS:
   -f          force reinstall an already installed font
   -k          keep the downloaded font archives
   -i <font>   directly install the specified fonts
+  -u <font>   uninstall the specified fonts
 
 To install fonts using the menu:
 - Choose one or more fonts (by index/number) to install
@@ -72,6 +73,8 @@ To install fonts directly:
 - Get the exact name of a font from the menu
 - Use 'getnf -i "<font-name>"' to install a font
 - Use 'getnf -i "<name1>,<name2>"' to install multiple fonts
+
+To uninstall fonts use the same syntax as for direct install.
 EOF
 }
 
@@ -309,7 +312,7 @@ remove_font_archives() {
 #   None
 #######################################
 update_font_cache() {
-    info "Updating fc-cache..."
+    info "Updating font cache..."
     fc-cache -f 2>&1
     confirm "fc-cache: update succeeded!"
 }
@@ -366,6 +369,34 @@ direct_install() {
             error "Invalid font name: $font_name. Try again."
         fi
     done
+}
+
+#######################################
+# Parse the string of font names and uninstall them if they are installed
+# Globals:
+#   DIST_DIR
+#   FONT_RELEASES_DIR
+# Arguments:
+#   String of font names
+#######################################
+uninstall_fonts() {
+    local -a fonts_to_uninstall
+    for font_name in $(echo "$1" | tr ',' ' '); do
+        if [[ -d "$DIST_DIR/$font_name" ]]; then
+            fonts_to_uninstall+=("$font_name")
+        else
+            error "Font $font_name is not installed."
+        fi
+    done
+    if [[ ${#fonts_to_uninstall[@]} -ne 0 ]]; then
+        for font in "${fonts_to_uninstall[@]}"; do
+            echo -n "Uninstalling $font... "
+            rm -rf "${DIST_DIR:?}/$font"
+            rm -f "$FONT_RELEASES_DIR/${font}_release.txt"
+            confirm "Done"
+        done
+        update_font_cache
+    fi
 }
 
 #######################################
@@ -508,12 +539,13 @@ menu_install() {
 }
 
 main() {
-    while getopts ":hkfi:" option; do
+    while getopts ":hkfi:u:" option; do
         case "${option}" in
             h) show_help && exit 0 ;;
             k) KEEP_FONT_ARCHIVES='true' ;;
             f) FORCE_FONT_UPDATE='true' ;;
             i) FONTNAMES="$OPTARG" ;;
+            u) UNINSTALL_FONTS="$OPTARG" ;;
             :) error "Option '-$OPTARG' requires at least one font name." ;;
             *) show_help && exit 0 ;;
         esac
@@ -521,6 +553,11 @@ main() {
     shift $((OPTIND - 1))
     readonly KEEP_FONT_ARCHIVES
     readonly FORCE_FONT_UPDATE
+
+    if [[ -n "$UNINSTALL_FONTS" ]]; then
+        uninstall_fonts "$UNINSTALL_FONTS"
+        exit
+    fi
 
     check_dependencies
     get_latest_release_version
