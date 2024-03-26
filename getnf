@@ -13,6 +13,7 @@
 
 readonly NERDFONTSAPI='https://api.github.com/repos/ryanoasis/nerd-fonts'
 readonly NERDFONTSREPO='https://github.com/ryanoasis/nerd-fonts'
+
 if [[ "$(uname)" == "Darwin" ]]; then # Mac OS
     DIST_DIR="$HOME/Library/Fonts"
 else
@@ -28,12 +29,13 @@ fi
 readonly DOWN_DIR
 
 readonly GETNF_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/getnf"
+readonly FONT_RELEASES_DIR="$GETNF_DIR/releases"
 readonly RELEASE_FILE="$GETNF_DIR/release.txt"
-readonly INSTALLED_FONTS_FILE="$GETNF_DIR/installed.txt"
+readonly ALL_FONTS_FILE="$GETNF_DIR/all_fonts.txt"
 
+NEW_RELEASE_AVAILABLE='false'
 ANY_FONTS_INSTALLED='false'
 KEEP_FONT_ARCHIVES='false'
-UPDATE_FONTS='false'
 FORCE_FONT_UPDATE='false'
 
 if command -v tput > /dev/null; then
@@ -107,23 +109,78 @@ create_dir() {
 
 check_dependencies() {
     ensure_installed curl
-
     create_dir "$DIST_DIR" "Fonts"
     create_dir "$DOWN_DIR" "Fonts Download"
-    [[ -d "$GETNF_DIR" ]] || mkdir -p "$GETNF_DIR"
+    [[ -d "$FONT_RELEASES_DIR" ]] || mkdir -p "$FONT_RELEASES_DIR"
 }
 
-handle_release_version() {
-    # Get the local release version
-    [[ -f "$RELEASE_FILE" ]] && cached_release=$(cat "$RELEASE_FILE")
-    # Get the latest release number from NerdFonts github repo
+get_latest_release_version() {
     RELEASE=$(curl --silent "$NERDFONTSAPI/releases/latest" |
         awk -v RS=',' -F'"' '/tag_name/ {print $4}')
-    # Compare the latest release number with the cached release number
-    if [[ "$RELEASE" != "$cached_release" ]]; then
-        UPDATE_FONTS='true'
-        # Update the cached release number
-        echo "$RELEASE" > "$RELEASE_FILE"
+    if [[ -f "$RELEASE_FILE" ]]; then
+        local current_release=$(cat "$RELEASE_FILE")
+        if [[ "$current_release" != "$RELEASE" ]]; then
+            NEW_RELEASE_AVAILABLE='true'
+        fi
+    fi
+    echo "$RELEASE" > "$RELEASE_FILE"
+}
+
+is_latest_version() {
+    local font_release_file="$FONT_RELEASES_DIR/${1}_release.txt"
+    if [[ -f "$font_release_file" ]]; then
+        local font_release_version=$(cat "$font_release_file")
+        if [[ "$font_release_version" == "$RELEASE" ]]; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+create_all_fonts_file() {
+    local font_list
+    font_list=$(curl -s "$NERDFONTSAPI/contents/patched-fonts?ref=master" |
+        awk -v RS=',' -F'"' '/name/ {print $4}')
+    echo "$font_list" > "$ALL_FONTS_FILE"
+}
+
+get_all_fonts() {
+    if [[ ! -f "$ALL_FONTS_FILE" || "$NEW_RELEASE_AVAILABLE" == "true" ]]; then
+        create_all_fonts_file
+    fi
+    declare -ag ALL_FONTS
+    #mapfile -t ALL_FONTS < "$ALL_FONTS_FILE" # not available on mac
+    while IFS= read -r line; do
+        ALL_FONTS+=("$line")
+    done < "$ALL_FONTS_FILE"
+}
+
+get_installed_fonts() {
+    # list all fonts in DIST_DIR
+    local installed_user_fonts=("$DIST_DIR"/*)
+    # leave only the basenames
+    installed_user_fonts=("${installed_user_fonts[@]##*/}")
+
+    # filter NerdFonts
+    declare -ag INSTALLED_FONTS
+    for font in "${ALL_FONTS[@]}"; do
+        if [[ " ${installed_user_fonts[*]} " == *" $font "* ]]; then
+            INSTALLED_FONTS+=("$font")
+        fi
+    done
+}
+
+filter_installed_fonts() {
+    if [[ "$FORCE_FONT_UPDATE" == "false" ]]; then
+        declare -ag FONT_OPTIONS
+        for font in "${ALL_FONTS[@]}"; do
+            # add the font even if it's installed but <fontname>_release.txt doesn't exists
+            if [[ " ${INSTALLED_FONTS[*]} " != *" $font "* ]] || ! is_latest_version "$font"; then
+                FONT_OPTIONS+=("$font")
+            fi
+        done
+    else
+        FONT_OPTIONS=("${ALL_FONTS[@]}")
     fi
 }
 
@@ -138,6 +195,10 @@ extract_font() {
     mkdir -p "$DIST_DIR/$1"
     tar -xf "$1.tar.xz" -C "$DIST_DIR/$1"
     confirm "$1 installation finished"
+}
+
+save_font_release() {
+    echo "$RELEASE" > "$FONT_RELEASES_DIR/${1}_release.txt"
 }
 
 remove_font_archives() {
@@ -160,7 +221,7 @@ install_font() {
     rm -f "$DOWN_DIR/$1.tar.xz"
     download_font "$1" &&
         extract_font "$1" &&
-        echo "$1" >> "$INSTALLED_FONTS_FILE"
+        save_font_release "$1"
     ANY_FONTS_INSTALLED='true'
     popd > /dev/null
 }
@@ -191,30 +252,46 @@ post_install() {
     confirm "Enjoy your new fonts!"
 }
 
-menu() {
-    local options=("$@")
-    info "Select one or more fonts:"
+display_installed_fonts() {
+    if [[ ${#INSTALLED_FONTS[@]} -ne 0 ]]; then
+        echo ""
+        info "Installed NerdFonts:"
+        for font in "${INSTALLED_FONTS[@]}"; do
+            local font_release_file="$FONT_RELEASES_DIR/${font}_release.txt"
+            if [[ -f "$font_release_file" ]]; then
+                local font_release_version=$(cat "$font_release_file")
+                printf "%s - %s\n" "$font" "$font_release_version"
+            else
+                printf "%s - unknown version\n" "$font"
+            fi
+        done
+    fi
+}
+
+display_font_menu() {
+    echo ""
+    info "NerdFonts ${RELEASE}:"
     (
-        for i in "${!options[@]}"; do
-            printf "%d) %s\n" "$((i + 1))" "${options[$i]}"
+        for i in "${!FONT_OPTIONS[@]}"; do
+            printf "%d) %s\n" "$((i + 1))" "${FONT_OPTIONS[$i]}"
         done
         printf "q) Quit\n"
     ) | pr -3 -t -w "$TERM_WIDTH"
 }
 
-# Parse input like 1-3
 parse_range() {
     if ! [[ $1 =~ ^[0-9]+-[0-9]+$ ]]; then
         alert "Invalid input format: $1. Expected format: X-Y."
         return 1
     fi
+    local -a range
     IFS='-' read -ra range <<< "$1"
-    range_start=${range[0]}
-    range_end=${range[1]}
+    local range_start=${range[0]}
+    local range_end=${range[1]}
     for ((i = range_start; i <= range_end; i++)); do
-        index=$((i - 1))
-        if ((index >= 0 && index < ${#font_options[@]})); then
-            SELECTED_FONTS[index]=${font_options[index]}
+        local index=$((i - 1))
+        if ((index >= 0 && index < ${#FONT_OPTIONS[@]})); then
+            SELECTED_FONTS[index]=${FONT_OPTIONS[index]}
         else
             alert "Invalid option: $i. Try again."
             return 1
@@ -222,47 +299,9 @@ parse_range() {
     done
 }
 
-menu_install() {
-    # Download the file list and extract the font names
-    font_list=$(curl -s "$NERDFONTSAPI/contents/patched-fonts?ref=master" |
-        awk -v RS=',' -F'"' '/name/ {print $4}')
-    # Convert the list of fonts into an array of fonts
-    declare -a all_fonts
-    # Read the input string and populate the array
-    #mapfile -t all_fonts <<< "$font_list"
-    while IFS= read -r line; do
-        all_fonts+=("$line")
-    done <<< "$font_list"
-
-    # Get the list of installed fonts
-    if [[ -f "$INSTALLED_FONTS_FILE" ]]; then
-        installed_font_list=$(cat "$INSTALLED_FONTS_FILE")
-        # Convert the list of installed fonts into an array of fonts
-        declare -a installed_fonts
-        while IFS= read -r line; do
-            installed_fonts+=("$line")
-        done <<< "$installed_font_list"
-    fi
-
-    # Remove installed fonts from the list of all fonts if there is no new release
-    # or if the user does not want to force the update
-    if [[ "$UPDATE_FONTS" == "false" && "$FORCE_FONT_UPDATE" == "false" ]]; then
-        declare -a font_options
-        for font in "${all_fonts[@]}"; do
-            if [[ " ${installed_fonts[*]} " != *" $font "* ]]; then
-                font_options+=("$font")
-            fi
-        done
-    else
-        echo "" > "$INSTALLED_FONTS_FILE"
-        font_options=("${all_fonts[@]}")
-    fi
-
-    # Call the menu function to list the available fonts
-    menu "${font_options[@]}"
-
-    # Handle user input
+handle_user_input() {
     while true; do
+        local choices
         read -rp "Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5): " choices
         for choice in $(echo "$choices" | tr ',' ' '); do
             if [[ $choice == "q" ]]; then
@@ -271,17 +310,28 @@ menu_install() {
             # Choice is a range (e.g. 1-3)
             elif [[ $choice == *-* ]]; then
                 parse_range "$choice" || continue 2
-            elif ((choice >= 1 && choice <= ${#font_options[@]})); then
-                index=$((choice - 1))
-                SELECTED_FONTS[index]=${font_options[index]}
+            elif ((choice >= 1 && choice <= ${#FONT_OPTIONS[@]})); then
+                local index=$((choice - 1))
+                SELECTED_FONTS[index]=${FONT_OPTIONS[index]}
             else
                 alert "Invalid option: $choice. Try again."
                 continue 2
             fi
         done
-        echo "Selected fonts: ${SELECTED_FONTS[*]}"
+        echo ""
+        info "Selected NerdFonts: ${SELECTED_FONTS[*]}"
         break
     done
+}
+
+menu_install() {
+    get_all_fonts
+    get_installed_fonts
+    filter_installed_fonts
+
+    display_installed_fonts
+    display_font_menu
+    handle_user_input
 }
 
 main() {
@@ -296,9 +346,11 @@ main() {
         esac
     done
     shift $((OPTIND - 1))
+    readonly KEEP_FONT_ARCHIVES
+    readonly FORCE_FONT_UPDATE
 
     check_dependencies
-    handle_release_version
+    get_latest_release_version
 
     declare -a SELECTED_FONTS
     if [[ -n "$FONTNAMES" ]]; then
