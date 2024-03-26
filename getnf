@@ -1,32 +1,52 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# getNF: A Better way to install NerdFonts
+#
+# Author: @ronniedroid
+# Maintainer: @trimclain
+# License: GPL-3.0
 
-# shellcheck disable=SC2164
+# shellcheck disable=SC2164,SC2155
+# Disabled:
+# "Declare and assign separately to avoid masking return values": https://github.com/koalaman/shellcheck/wiki/SC2155
+# "Use 'pushd ... || exit' or 'pushd ... || exit' in case pushd fails": https://github.com/koalaman/shellcheck/wiki/SC2164
 
-nerdfontsrepo='https://api.github.com/repos/ryanoasis/nerd-fonts'
-dist_dir="$HOME/.local/share/fonts"
-down_dir="$(command -v xdg-user-dir > /dev/null && xdg-user-dir DOWNLOAD || echo "$HOME/Downloads")/NerdFonts"
-cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/nerdFonts"
+readonly NERDFONTSAPI='https://api.github.com/repos/ryanoasis/nerd-fonts'
+readonly NERDFONTSREPO='https://github.com/ryanoasis/nerd-fonts'
+if [[ "$(uname)" == "Darwin" ]]; then # Mac OS
+    DIST_DIR="$HOME/Library/Fonts"
+else
+    DIST_DIR="$HOME/.local/share/fonts"
+fi
+readonly DIST_DIR
 
-release_file="$cache_dir/release.txt"
-installed_fonts_file="$cache_dir/installed.txt"
+if command -v xdg-user-dir > /dev/null; then
+    DOWN_DIR="$(xdg-user-dir DOWNLOAD)/getnf"
+else
+    DOWN_DIR="$HOME/Downloads/getnf"
+fi
+readonly DOWN_DIR
 
-aFontInstalled="False"
-keepFontArchives="False"
-update_fonts="False"
-force_update="False"
+readonly GETNF_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/getnf"
+readonly RELEASE_FILE="$GETNF_DIR/release.txt"
+readonly INSTALLED_FONTS_FILE="$GETNF_DIR/installed.txt"
+
+ANY_FONTS_INSTALLED='false'
+KEEP_FONT_ARCHIVES='false'
+UPDATE_FONTS='false'
+FORCE_FONT_UPDATE='false'
 
 if command -v tput > /dev/null; then
     # tput is part of the ncurses package
-    RED=$(tput setaf 1)
-    GREEN=$(tput setaf 2)
-    RESET=$(tput sgr0)
-fi
+    readonly RED=$(tput setaf 1)
+    readonly GREEN=$(tput setaf 2)
+    readonly RESET=$(tput sgr0)
 
-# Mac OS
-if [[ "$(uname)" == "Darwin" ]]; then
-    dist_dir="$HOME/Library/Fonts"
-    cache_dir="$HOME/Library/Caches/NerdFonts"
+    TERM_WIDTH=$(tput cols)
+else
+    TERM_WIDTH=$(stty size | cut -d ' ' -f 2)
 fi
+readonly TERM_WIDTH
 
 show_help() {
     cat << EOF
@@ -88,42 +108,42 @@ create_dir() {
 check_dependencies() {
     ensure_installed curl
 
-    create_dir "$dist_dir" "Fonts"
-    create_dir "$down_dir" "Fonts Download"
-    [[ -d "$cache_dir" ]] || mkdir -p "$cache_dir"
+    create_dir "$DIST_DIR" "Fonts"
+    create_dir "$DOWN_DIR" "Fonts Download"
+    [[ -d "$GETNF_DIR" ]] || mkdir -p "$GETNF_DIR"
 }
 
 handle_release_version() {
     # Get the local release version
-    [[ -f "$release_file" ]] && cached_release=$(cat "$release_file")
+    [[ -f "$RELEASE_FILE" ]] && cached_release=$(cat "$RELEASE_FILE")
     # Get the latest release number from NerdFonts github repo
-    release=$(curl --silent "$nerdfontsrepo/releases/latest" |
+    RELEASE=$(curl --silent "$NERDFONTSAPI/releases/latest" |
         awk -v RS=',' -F'"' '/tag_name/ {print $4}')
     # Compare the latest release number with the cached release number
-    if [[ "$release" != "$cached_release" ]]; then
-        update_fonts=True
+    if [[ "$RELEASE" != "$cached_release" ]]; then
+        UPDATE_FONTS='true'
         # Update the cached release number
-        echo "$release" > "$release_file"
+        echo "$RELEASE" > "$RELEASE_FILE"
     fi
 }
 
 download_font() {
     info "$1 download started..."
-    curl -LJO# "https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$1.tar.xz"
+    curl -LJO# "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
     confirm "$1 download finished"
 }
 
 extract_font() {
     info "$1 installation started..."
-    mkdir -p "$dist_dir/$1"
-    tar -xf "$1.tar.xz" -C "$dist_dir/$1"
+    mkdir -p "$DIST_DIR/$1"
+    tar -xf "$1.tar.xz" -C "$DIST_DIR/$1"
     confirm "$1 installation finished"
 }
 
 remove_font_archives() {
-    info "Removing downloaded font archives from $down_dir..."
+    info "Removing downloaded font archives from $DOWN_DIR..."
     for font in "${SELECTED_FONTS[@]}"; do
-        rm "$down_dir/$font.tar.xz"
+        rm "$DOWN_DIR/$font.tar.xz"
     done
     confirm "Downloaded font archives removal succeeded!"
 }
@@ -135,19 +155,20 @@ update_font_cache() {
 }
 
 install_font() {
-    pushd "$down_dir" > /dev/null
+    pushd "$DOWN_DIR" > /dev/null
     # Remove the archive if it exists due to curl not having overwrite option
-    rm -f "$down_dir/$1.tar.xz"
+    rm -f "$DOWN_DIR/$1.tar.xz"
     download_font "$1" &&
         extract_font "$1" &&
-        echo "$1" >> "$installed_fonts_file"
-    aFontInstalled="True"
+        echo "$1" >> "$INSTALLED_FONTS_FILE"
+    ANY_FONTS_INSTALLED='true'
     popd > /dev/null
 }
 
 font_url_exists() {
-    url="https://github.com/ryanoasis/nerd-fonts/releases/download/$release/$1.tar.xz"
-    curl --output /dev/null --silent --head --fail "$url" && return 0 || return 1
+    local url="$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
+    curl --output /dev/null --silent --head --fail "$url" && return 0
+    return 1
 }
 
 direct_install() {
@@ -162,10 +183,10 @@ direct_install() {
 
 post_install() {
     update_font_cache
-    if [[ "$keepFontArchives" == "False" ]]; then
+    if [[ "$KEEP_FONT_ARCHIVES" == "false" ]]; then
         remove_font_archives
     else
-        info "The downloaded font archives can be found in $down_dir"
+        info "The downloaded font archives can be found in $DOWN_DIR"
     fi
     confirm "Enjoy your new fonts!"
 }
@@ -178,7 +199,7 @@ menu() {
             printf "%d) %s\n" "$((i + 1))" "${options[$i]}"
         done
         printf "q) Quit\n"
-    ) | pr -3 -t -w "$(tput cols)"
+    ) | pr -3 -t -w "$TERM_WIDTH"
 }
 
 # Parse input like 1-3
@@ -203,7 +224,7 @@ parse_range() {
 
 menu_install() {
     # Download the file list and extract the font names
-    font_list=$(curl -s "$nerdfontsrepo/contents/patched-fonts?ref=master" |
+    font_list=$(curl -s "$NERDFONTSAPI/contents/patched-fonts?ref=master" |
         awk -v RS=',' -F'"' '/name/ {print $4}')
     # Convert the list of fonts into an array of fonts
     declare -a all_fonts
@@ -214,8 +235,8 @@ menu_install() {
     done <<< "$font_list"
 
     # Get the list of installed fonts
-    if [[ -f "$installed_fonts_file" ]]; then
-        installed_font_list=$(cat "$installed_fonts_file")
+    if [[ -f "$INSTALLED_FONTS_FILE" ]]; then
+        installed_font_list=$(cat "$INSTALLED_FONTS_FILE")
         # Convert the list of installed fonts into an array of fonts
         declare -a installed_fonts
         while IFS= read -r line; do
@@ -225,7 +246,7 @@ menu_install() {
 
     # Remove installed fonts from the list of all fonts if there is no new release
     # or if the user does not want to force the update
-    if [[ "$update_fonts" == "False" && "$force_update" == "False" ]]; then
+    if [[ "$UPDATE_FONTS" == "false" && "$FORCE_FONT_UPDATE" == "false" ]]; then
         declare -a font_options
         for font in "${all_fonts[@]}"; do
             if [[ " ${installed_fonts[*]} " != *" $font "* ]]; then
@@ -233,7 +254,7 @@ menu_install() {
             fi
         done
     else
-        echo "" > "$installed_fonts_file"
+        echo "" > "$INSTALLED_FONTS_FILE"
         font_options=("${all_fonts[@]}")
     fi
 
@@ -267,8 +288,8 @@ main() {
     while getopts ":hkfi:" option; do
         case "${option}" in
             h) show_help && exit 0 ;;
-            k) keepFontArchives="True" ;;
-            f) force_update="True" ;;
+            k) KEEP_FONT_ARCHIVES='true' ;;
+            f) FORCE_FONT_UPDATE='true' ;;
             i) FONTNAMES="$OPTARG" ;;
             :) error "Option '-$OPTARG' requires at least one font name." ;;
             *) show_help && exit 0 ;;
@@ -294,7 +315,7 @@ main() {
         error "No fonts were selected, exiting."
     fi
 
-    if [[ "$aFontInstalled" == "True" ]]; then
+    if [[ "$ANY_FONTS_INSTALLED" == "true" ]]; then
         post_install
     fi
 }
