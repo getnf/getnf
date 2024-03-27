@@ -11,20 +11,24 @@
 # "Declare and assign separately to avoid masking return values": https://github.com/koalaman/shellcheck/wiki/SC2155
 # "Use 'pushd ... || exit' or 'pushd ... || exit' in case pushd fails": https://github.com/koalaman/shellcheck/wiki/SC2164
 
+ON_MAC='false'
+if [[ $(uname) == "Darwin" ]]; then
+    ON_MAC='true'
+fi
+readonly ON_MAC
+
 readonly NERDFONTSAPI='https://api.github.com/repos/ryanoasis/nerd-fonts'
 readonly NERDFONTSREPO='https://github.com/ryanoasis/nerd-fonts'
 
-if [[ "$(uname)" == "Darwin" ]]; then # Mac OS
+DIST_DIR="$HOME/.local/share/fonts"
+if [[ "$ON_MAC" == "true" ]]; then
     DIST_DIR="$HOME/Library/Fonts"
-else
-    DIST_DIR="$HOME/.local/share/fonts"
 fi
 readonly DIST_DIR
 
+DOWN_DIR="$HOME/Downloads/getnf"
 if command -v xdg-user-dir > /dev/null; then
     DOWN_DIR="$(xdg-user-dir DOWNLOAD)/getnf"
-else
-    DOWN_DIR="$HOME/Downloads/getnf"
 fi
 readonly DOWN_DIR
 
@@ -119,6 +123,9 @@ verify_internet_access() {
 
 check_dependencies() {
     ensure_installed curl
+    if [[ "$ON_MAC" == "false" ]]; then
+        ensure_installed fc-cache
+    fi
     verify_internet_access
     create_dir "$DIST_DIR" "Fonts"
     create_dir "$DOWN_DIR" "Fonts Download"
@@ -312,9 +319,11 @@ remove_font_archives() {
 #   None
 #######################################
 update_font_cache() {
-    info "Updating font cache..."
-    fc-cache -f 2>&1
-    confirm "fc-cache: update succeeded!"
+    if [[ "$ON_MAC" == "false" ]]; then
+        echo -n "Updating font cache... "
+        fc-cache &> /dev/null
+        confirm "Done"
+    fi
 }
 
 #######################################
