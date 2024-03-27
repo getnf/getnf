@@ -47,12 +47,7 @@ if command -v tput > /dev/null; then
     readonly RED=$(tput setaf 1)
     readonly GREEN=$(tput setaf 2)
     readonly RESET=$(tput sgr0)
-
-    TERM_WIDTH=$(tput cols)
-else
-    TERM_WIDTH=$(stty size | cut -d ' ' -f 2)
 fi
-readonly TERM_WIDTH
 
 show_help() {
     cat << EOF
@@ -202,7 +197,7 @@ get_all_fonts() {
     if [[ ! -f "$ALL_FONTS_FILE" || "$NEW_RELEASE_AVAILABLE" == "true" ]]; then
         create_all_fonts_file
     fi
-    declare -ag ALL_FONTS
+    ALL_FONTS=()
     #mapfile -t ALL_FONTS < "$ALL_FONTS_FILE" # not available on mac
     while IFS= read -r line; do
         ALL_FONTS+=("$line")
@@ -224,7 +219,7 @@ get_installed_fonts() {
     installed_user_fonts=("${installed_user_fonts[@]##*/}")
 
     # filter NerdFonts
-    declare -ag INSTALLED_FONTS
+    INSTALLED_FONTS=()
     for font in "${ALL_FONTS[@]}"; do
         if [[ " ${installed_user_fonts[*]} " == *" $font "* ]]; then
             INSTALLED_FONTS+=("$font")
@@ -245,7 +240,7 @@ get_installed_fonts() {
 #######################################
 filter_installed_fonts() {
     if [[ "$FORCE_FONT_UPDATE" == "false" ]]; then
-        declare -ag FONT_OPTIONS
+        FONT_OPTIONS=()
         for font in "${ALL_FONTS[@]}"; do
             # add the font even if it's installed but <fontname>_release.txt doesn't exists
             if [[ " ${INSTALLED_FONTS[*]} " != *" $font "* ]] || ! is_latest_version "$font"; then
@@ -458,6 +453,7 @@ display_installed_fonts() {
 #   None
 #######################################
 display_font_menu() {
+    local term_width=$(stty size | cut -d ' ' -f 2)
     echo ""
     info "NerdFonts ${RELEASE}:"
     (
@@ -465,7 +461,7 @@ display_font_menu() {
             printf "%d) %s\n" "$((i + 1))" "${FONT_OPTIONS[$i]}"
         done
         printf "q) Quit\n"
-    ) | pr -3 -t -w "$TERM_WIDTH"
+    ) | pr -3 -t -w "$term_width"
 }
 
 #######################################
@@ -571,7 +567,7 @@ main() {
     check_dependencies
     get_latest_release_version
 
-    declare -a SELECTED_FONTS
+    SELECTED_FONTS=()
     if [[ -n "$FONTNAMES" ]]; then
         direct_install "$FONTNAMES"
     else
