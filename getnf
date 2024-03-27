@@ -44,8 +44,10 @@ FORCE_FONT_UPDATE='false'
 
 if command -v tput > /dev/null; then
     # tput is part of the ncurses package
-    readonly RED=$(tput setaf 1)
+    # Colors: https://www.ditig.com/publications/256-colors-cheat-sheet
+    readonly RED=$(tput setaf 9)
     readonly GREEN=$(tput setaf 2)
+    readonly TEAL=$(tput setaf 6)
     readonly RESET=$(tput sgr0)
 fi
 
@@ -79,6 +81,10 @@ EOF
 
 info() {
     printf "%s\n" "$1"
+}
+
+title() {
+    printf "\n${TEAL}%b${RESET}\n" "$1"
 }
 
 confirm() {
@@ -430,8 +436,7 @@ post_install() {
 #######################################
 display_installed_fonts() {
     if [[ ${#INSTALLED_FONTS[@]} -ne 0 ]]; then
-        echo ""
-        info "Installed NerdFonts:"
+        title "Installed NerdFonts:"
         for font in "${INSTALLED_FONTS[@]}"; do
             local font_release_file="$FONT_RELEASES_DIR/${font}_release.txt"
             if [[ -f "$font_release_file" ]]; then
@@ -454,8 +459,7 @@ display_installed_fonts() {
 #######################################
 display_font_menu() {
     local term_width=$(stty size | cut -d ' ' -f 2)
-    echo ""
-    info "NerdFonts ${RELEASE}:"
+    title "NerdFonts ${RELEASE}:"
     (
         for i in "${!FONT_OPTIONS[@]}"; do
             printf "%d) %s\n" "$((i + 1))" "${FONT_OPTIONS[$i]}"
@@ -522,8 +526,7 @@ handle_user_input() {
                 continue 2
             fi
         done
-        echo ""
-        info "Selected NerdFonts: ${SELECTED_FONTS[*]}"
+        title "Selected NerdFonts: ${SELECTED_FONTS[*]}"
         break
     done
 }
