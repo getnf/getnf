@@ -1,13 +1,32 @@
-# getNF
+# `getnf` - Get Nerd Fonts
 
-## A better way to install NerdFonts
+<!-- <a href="https://github.com/getnf/getnf/releases/latest"> -->
+<!--     <img alt="Latest release" src="https://img.shields.io/github/v/release/getnf/getnf?style=flat-square" /> -->
+<!-- </a> -->
+<a href="https://github.com/getnf/getnf/pulse">
+    <img alt="Last commit" src="https://img.shields.io/github/last-commit/getnf/getnf?style=flat-square"/>
+</a>
+<a href="https://github.com/getnf/getnf/issues">
+    <img alt="Issues" src="https://img.shields.io/github/issues/getnf/getnf?style=flat-square" />
+</a>
+<a href="https://github.com/getnf/getnf/blob/master/LICENSE">
+    <img alt="License" src="https://img.shields.io/github/license/getnf/getnf?style=flat-square" />
+</a>
+<a href="https://github.com/getnf/getnf/stargazers">
+    <img alt="Stars" src="https://img.shields.io/github/stars/getnf/getnf?style=flat-square" />
+</a>
 
-### Dependencies
+Easily install Nerd Fonts from the terminal.
+
+## Supported Platforms
+`getnf` is supported on macOS and Linux.
+
+## Prerequisites
 
 - curl
-- fontconfig
+- fontconfig *(only on Linux)*
 
-### Installation
+## Installation
 
 ```
 curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
@@ -15,14 +34,21 @@ curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
 
 Make sure that `~/.local/bin` is in your PATH.
 
-#### Arch Linux
+You can suppress the installation output with a flag `--silent` or `-s`:
+```
+curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --silent
+```
 
-Arch Linux users can install the package from the [AUR](https://aur.archlinux.org/packages/getnf):
+### Packages
+
+On Arch Linux you can install `getnf` from the [AUR](https://aur.archlinux.org/packages/getnf):
 ```
 paru -S getnf
 ```
 
-### Usage
+## Usage
+
+Run getnf to display the list of available Nerd Fonts and install the selected ones.
 
 Run `getnf -h` to get the help message.
 
@@ -47,10 +73,3 @@ You can get the names of the fonts from the menu.
 To uninstall fonts use the `-u` flag with the same syntax as for direct install.
 
 Enjoy!
-
-### Notes
-
-You can suppress the installation output with a flag `--silent` or `-s`:
-```
-curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --silent
-```
