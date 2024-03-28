@@ -1,20 +1,10 @@
 # `getnf` - Get Nerd Fonts
 
-<!-- <a href="https://github.com/getnf/getnf/releases/latest"> -->
-<!--     <img alt="Latest release" src="https://img.shields.io/github/v/release/getnf/getnf?style=flat-square" /> -->
-<!-- </a> -->
-<a href="https://github.com/getnf/getnf/pulse">
-    <img alt="Last commit" src="https://img.shields.io/github/last-commit/getnf/getnf?style=flat-square"/>
-</a>
-<a href="https://github.com/getnf/getnf/issues">
-    <img alt="Issues" src="https://img.shields.io/github/issues/getnf/getnf?style=flat-square" />
-</a>
-<a href="https://github.com/getnf/getnf/blob/master/LICENSE">
-    <img alt="License" src="https://img.shields.io/github/license/getnf/getnf?style=flat-square" />
-</a>
-<a href="https://github.com/getnf/getnf/stargazers">
-    <img alt="Stars" src="https://img.shields.io/github/stars/getnf/getnf?style=flat-square" />
-</a>
+<!-- [![getnf](https://img.shields.io/github/v/release/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/releases/latest) -->
+[![getnf](https://img.shields.io/github/last-commit/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/pulse)
+[![getnf](https://img.shields.io/github/issues/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/issues)
+[![getnf](https://img.shields.io/github/license/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/blob/master/LICENSE)
+[![getnf](https://img.shields.io/github/stars/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/stargazers)
 
 Easily install Nerd Fonts from the terminal.
 
