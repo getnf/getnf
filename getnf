@@ -146,19 +146,19 @@ check_dependencies() {
 #stop_loading_animation
 # Don't forget to redirect the output from "foo"
 #######################################
-readonly ANIMATION=( '-' "\\" '|' '/' )
+readonly ANIMATION=('-' "\\" '|' '/')
 readonly FRAME_INTERVAL=0.25
 # BOX=( ┤ ┴ ├ ┬ )
 # BOX_INTERVAL=0.2
 
 play_loading_animation_loop() {
-    while true ; do
-        for frame in "${ANIMATION[@]}" ; do
+    while true; do
         # for frame in "${BOX[@]}" ; do
+        for frame in "${ANIMATION[@]}"; do
             printf "\033[1D\033[K"
             printf "%s" "${frame}"
-            sleep "$FRAME_INTERVAL"
             # sleep "$BOX_INTERVAL"
+            sleep "$FRAME_INTERVAL"
         done
     done
 }
@@ -318,7 +318,7 @@ filter_installed_fonts() {
 #######################################
 download_font() {
     echo -n "Downloading $1...  "
-    local curl_options=( "--silent" "--location" "--remote-header-name" "--remote-name" )
+    local curl_options=("--silent" "--location" "--remote-header-name" "--remote-name")
     trap stop_loading_animation SIGINT
     start_loading_animation
     curl "${curl_options[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
