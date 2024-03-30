@@ -6,7 +6,7 @@
 [![getnf](https://img.shields.io/github/license/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/blob/master/LICENSE)
 [![getnf](https://img.shields.io/github/stars/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/stargazers)
 
-Easily install Nerd Fonts from the terminal.
+Easily install [Nerd Fonts](https://www.nerdfonts.com/) from the terminal.
 
 ## Supported Platforms
 `getnf` is supported on macOS and Linux.
