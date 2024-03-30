@@ -29,15 +29,29 @@ jobs:
         run: |
           ./getnf -i JetBrainsMono,CascadiaCode
           ./getnf -i "IBMPlexMono Hack"
-          test -d "$HOME/.local/share/fonts/JetBrainsMono"
-          test -d "$HOME/.local/share/fonts/CascadiaCode"
-          test -d "$HOME/.local/share/fonts/IBMPlexMono"
-          test -d "$HOME/.local/share/fonts/Hack"
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            test -d "$HOME/.local/share/fonts/JetBrainsMono"
+            test -d "$HOME/.local/share/fonts/CascadiaCode"
+            test -d "$HOME/.local/share/fonts/IBMPlexMono"
+            test -d "$HOME/.local/share/fonts/Hack"
+          else
+            test -d "$HOME/Library/Fonts/JetBrainsMono"
+            test -d "$HOME/Library/Fonts/CascadiaCode"
+            test -d "$HOME/Library/Fonts/IBMPlexMono"
+            test -d "$HOME/Library/Fonts/Hack"
+          fi
       - name: Uninstall fonts
         run: |
           ./getnf -u JetBrainsMono,CascadiaCode
           ./getnf -u "IBMPlexMono Hack"
-          ! test -d "$HOME/.local/share/fonts/JetBrainsMono"
-          ! test -d "$HOME/.local/share/fonts/CascadiaCode"
-          ! test -d "$HOME/.local/share/fonts/IBMPlexMono"
-          ! test -d "$HOME/.local/share/fonts/Hack"
+          if [ "${{ runner.os }}" == "Linux" ]; then
+            ! test -d "$HOME/.local/share/fonts/JetBrainsMono"
+            ! test -d "$HOME/.local/share/fonts/CascadiaCode"
+            ! test -d "$HOME/.local/share/fonts/IBMPlexMono"
+            ! test -d "$HOME/.local/share/fonts/Hack"
+          else
+            ! test -d "$HOME/Library/Fonts/JetBrainsMono"
+            ! test -d "$HOME/Library/Fonts/CascadiaCode"
+            ! test -d "$HOME/Library/Fonts/IBMPlexMono"
+            ! test -d "$HOME/Library/Fonts/Hack"
+          fi
