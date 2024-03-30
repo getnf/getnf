@@ -1,0 +1,43 @@
+name: Tests
+
+on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Install getnf
+        run: |
+          # Reset getnf installation if, for any reason, it was cached
+          [[ -d "${XDG_DATA_HOME:-$HOME/.local/share}/getnf" ]] && rm -rf "${XDG_DATA_HOME:-$HOME/.local/share}/getnf" || :
+          [[ -f "$HOME/.local/bin/getnf" ]] && rm -f "$HOME/.local/bin/getnf" || :
+          bash ${{ github.workspace }}/install.sh
+          test -f "$HOME/.local/bin/getnf"
+      - name: Install fonts
+        run: |
+          ./getnf -i JetBrainsMono,CascadiaCode
+          ./getnf -i "IBMPlexMono Hack"
+          test -d "$HOME/.local/share/fonts/JetBrainsMono"
+          test -d "$HOME/.local/share/fonts/CascadiaCode"
+          test -d "$HOME/.local/share/fonts/IBMPlexMono"
+          test -d "$HOME/.local/share/fonts/Hack"
+      - name: Uninstall fonts
+        run: |
+          ./getnf -u JetBrainsMono,CascadiaCode
+          ./getnf -u "IBMPlexMono Hack"
+          ! test -d "$HOME/.local/share/fonts/JetBrainsMono"
+          ! test -d "$HOME/.local/share/fonts/CascadiaCode"
+          ! test -d "$HOME/.local/share/fonts/IBMPlexMono"
+          ! test -d "$HOME/.local/share/fonts/Hack"
