@@ -148,16 +148,12 @@ check_dependencies() {
 #######################################
 readonly ANIMATION=('-' "\\" '|' '/')
 readonly FRAME_INTERVAL=0.25
-# BOX=( ┤ ┴ ├ ┬ )
-# BOX_INTERVAL=0.2
 
 play_loading_animation_loop() {
     while true; do
-        # for frame in "${BOX[@]}" ; do
         for frame in "${ANIMATION[@]}"; do
             printf "\033[1D\033[K"
             printf "%s" "${frame}"
-            # sleep "$BOX_INTERVAL"
             sleep "$FRAME_INTERVAL"
         done
     done
@@ -607,7 +603,7 @@ main() {
             k) KEEP_FONT_ARCHIVES='true' ;;
             f) FORCE_FONT_UPDATE='true' ;;
             i) FONTNAMES="$OPTARG" ;;
-            u) UNINSTALL_FONTS="$OPTARG" ;;
+            u) uninstall_fonts "$OPTARG" && exit 0 ;;
             :) error "Option '-$OPTARG' requires at least one font name." ;;
             *) show_help && exit 0 ;;
         esac
@@ -615,11 +611,6 @@ main() {
     shift $((OPTIND - 1))
     readonly KEEP_FONT_ARCHIVES
     readonly FORCE_FONT_UPDATE
-
-    if [[ -n "$UNINSTALL_FONTS" ]]; then
-        uninstall_fonts "$UNINSTALL_FONTS"
-        exit
-    fi
 
     check_dependencies
     get_latest_release_version
