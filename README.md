@@ -60,6 +60,8 @@ Use `getnf -i <name1>,<name2>` or `getnf -i "<name1> <name2>"`
 to install multiple fonts.<br>
 You can get the names of the fonts from the menu.
 
-To uninstall fonts use the `-u` flag with the same syntax as for direct install.
+To uninstall fonts use the `-r` flag with the same syntax as for direct install.
+
+To update getnf to the latest version available use `-u` in isolation before doing anything else 
 
 Enjoy!

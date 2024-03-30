@@ -63,7 +63,8 @@ OPTIONS:
   -f          force reinstall an already installed font
   -k          keep the downloaded font archives
   -i <font>   directly install the specified fonts
-  -u <font>   uninstall the specified fonts
+  -r <font>   uninstall the specified fonts
+  -u          updates getNF to the latest version
 
 To install fonts using the menu:
 - Choose one or more fonts (by index/number) to install
@@ -464,6 +465,16 @@ uninstall_fonts() {
 }
 
 #######################################
+# Updates getnf to the latest version
+# Arguments:
+#   None
+#######################################
+update_to_latest_version() {
+    echo "Updating getNF..."
+    curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
+}
+
+#######################################
 # Update the font cache and remove font archives unless specified otherwise
 # Globals:
 #   KEEP_FONT_ARCHIVES
@@ -601,13 +612,14 @@ menu_install() {
 }
 
 main() {
-    while getopts ":hkfi:u:" option; do
+    while getopts ":hkfuir:" option; do
         case "${option}" in
             h) show_help && exit 0 ;;
             k) KEEP_FONT_ARCHIVES='true' ;;
             f) FORCE_FONT_UPDATE='true' ;;
+            u) UPDATE_TO_LATEST='true' ;;
             i) FONTNAMES="$OPTARG" ;;
-            u) UNINSTALL_FONTS="$OPTARG" ;;
+            r) UNINSTALL_FONTS="$OPTARG" ;;
             :) error "Option '-$OPTARG' requires at least one font name." ;;
             *) show_help && exit 0 ;;
         esac
@@ -618,6 +630,11 @@ main() {
 
     if [[ -n "$UNINSTALL_FONTS" ]]; then
         uninstall_fonts "$UNINSTALL_FONTS"
+        exit
+    fi
+
+    if [[ "$UPDATE_TO_LATEST" == "true" ]]; then
+        update_to_latest_version
         exit
     fi
 
