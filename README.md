@@ -52,7 +52,7 @@ use the `-k` flag to keep the font archives in the downloads directory.
 
 By default, the already installed fonts are not listed in the font menu,
 unless there is a new version of Nerd Fonts available.
-You can force reinstalling fonts by using the `-f` flag.
+You can change that by using the `-a` flag.
 
 If you know the exact font you want to install,
 you can do it directly with `getnf -i <font-name>`.<br>
