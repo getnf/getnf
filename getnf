@@ -42,7 +42,6 @@ readonly RELEASE_FILE="$GETNF_DIR/release.txt"
 readonly ALL_FONTS_FILE="$GETNF_DIR/all_fonts.txt"
 
 NEW_RELEASE_AVAILABLE='false'
-ANY_FONTS_INSTALLED='false'
 KEEP_FONT_ARCHIVES='false'
 INCLUDE_INSTALLED_FONTS='false'
 
@@ -275,7 +274,6 @@ get_installed_fonts() {
     local installed_user_fonts=("$DIST_DIR"/*)
     # leave only the basenames
     installed_user_fonts=("${installed_user_fonts[@]##*/}")
-
     # filter NerdFonts
     INSTALLED_FONTS=()
     for font in "${ALL_FONTS[@]}"; do
@@ -390,7 +388,6 @@ update_font_cache() {
 # Globals:
 #   DOWN_DIR
 #   INSTALLED_FONTS_FILE
-#   ANY_FONTS_INSTALLED
 # Arguments:
 #   Font name
 #######################################
@@ -401,37 +398,21 @@ install_font() {
     download_font "$1" &&
         extract_font "$1" &&
         save_font_release "$1"
-    ANY_FONTS_INSTALLED='true'
     popd > /dev/null
-}
-
-#######################################
-# Check if the font is a NerdFont by checking if the URL exists
-# Globals:
-#   NERDFONTSREPO
-#   RELEASE
-# Arguments:
-#   Font name
-# Returns:
-#   0 if font url exists, 1 otherwise
-#######################################
-font_url_exists() {
-    local url="$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
-    curl --output /dev/null --silent --head --fail "$url" && return 0
-    return 1
 }
 
 #######################################
 # Parse the string of font names and add them
 # to SELECTED_FONTS if all of them are valid
 # Globals:
+#   ALL_FONTS
 #   SELECTED_FONTS
 # Arguments:
 #   String of font names
 #######################################
 direct_install() {
     for font_name in $(echo "$1" | tr ',' ' '); do
-        if font_url_exists "$font_name"; then
+        if [[ " ${ALL_FONTS[*]} " == *" $font_name "* ]]; then
             SELECTED_FONTS+=("$font_name")
         else
             error "Invalid font name: $font_name. Try again."
@@ -652,12 +633,9 @@ main() {
         for i in "${SELECTED_FONTS[@]}"; do
             install_font "$i"
         done
+        post_install
     else
         error "No fonts were selected, exiting."
-    fi
-
-    if [[ "$ANY_FONTS_INSTALLED" == "true" ]]; then
-        post_install
     fi
 }
 
