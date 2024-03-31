@@ -6,10 +6,12 @@
 # Maintainer: @trimclain
 # License: GPL-3.0
 
-# shellcheck disable=SC2164,SC2155
+# shellcheck disable=SC2155,SC2164
 # Disabled:
-# "Declare and assign separately to avoid masking return values": https://github.com/koalaman/shellcheck/wiki/SC2155
-# "Use 'pushd ... || exit' or 'pushd ... || exit' in case pushd fails": https://github.com/koalaman/shellcheck/wiki/SC2164
+# "Declare and assign separately to avoid masking return values":
+#  https://www.shellcheck.net/wiki/SC2155
+# "Use 'pushd ... || exit' or 'pushd ... || exit' in case pushd fails":
+#  https://www.shellcheck.net/wiki/SC2164
 
 readonly VERSION="v0.1.0"
 
@@ -149,7 +151,7 @@ check_dependencies() {
 #foo
 #stop_loading_animation
 # Don't forget to redirect the output from "foo"
-#######################################
+
 readonly ANIMATION=('-' "\\" '|' '/')
 readonly FRAME_INTERVAL=0.25
 
@@ -298,8 +300,10 @@ filter_installed_fonts() {
     if [[ "$INCLUDE_INSTALLED_FONTS" == "false" ]]; then
         FONT_OPTIONS=()
         for font in "${ALL_FONTS[@]}"; do
-            # add the font even if it's installed but <fontname>_release.txt doesn't exists
-            if [[ " ${INSTALLED_FONTS[*]} " != *" $font "* ]] || ! is_latest_version "$font"; then
+            # add the font even if it's installed but <fontname>_release.txt
+            # doesn't exists or the version is not the latest
+            if [[ " ${INSTALLED_FONTS[*]} " != *" $font "* ]] ||
+                ! is_latest_version "$font"; then
                 FONT_OPTIONS+=("$font")
             fi
         done
@@ -318,10 +322,10 @@ filter_installed_fonts() {
 #######################################
 download_font() {
     echo -n "Downloading $1...  "
-    local curl_options=("--silent" "--location" "--remote-header-name" "--remote-name")
+    local opts=("--silent" "--location" "--remote-header-name" "--remote-name")
     trap stop_loading_animation SIGINT
     start_loading_animation
-    curl "${curl_options[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
+    curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
     stop_loading_animation
     confirm "Done"
 }
@@ -617,7 +621,12 @@ main() {
             h) display_help && exit 0 ;;
             k) KEEP_FONT_ARCHIVES='true' ;;
             a) INCLUDE_INSTALLED_FONTS='true' ;;
-            l) get_all_fonts && get_installed_fonts && display_installed_fonts && exit 0 ;;
+            l)
+                get_all_fonts
+                get_installed_fonts
+                display_installed_fonts
+                exit 0
+                ;;
             i) FONTNAMES="$OPTARG" ;;
             u) uninstall_fonts "$OPTARG" && exit 0 ;;
             V) display_getnf_version && exit 0 ;;
