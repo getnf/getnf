@@ -44,6 +44,7 @@ readonly ALL_FONTS_FILE="$GETNF_DIR/all_fonts.txt"
 NEW_RELEASE_AVAILABLE='false'
 KEEP_FONT_ARCHIVES='false'
 INCLUDE_INSTALLED_FONTS='false'
+UPDATE_INSTALLED_FONTS='false'
 
 if command -v tput > /dev/null; then
     # tput is part of the ncurses package
@@ -68,6 +69,7 @@ OPTIONS:
   -l          show the list of installed fonts
   -i <font>   directly install the specified fonts
   -u <font>   uninstall the specified fonts
+  -U          update all installed NerdFonts
   -V          display current getnf version
 
 To install fonts using the menu:
@@ -112,9 +114,7 @@ ensure_installed() {
 }
 
 create_dir() {
-    if [[ -d "$1" ]]; then
-        info "$2 directory exists, good."
-    else
+    if [[ ! -d "$1" ]]; then
         mkdir -p "$1"
         confirm "Created the $2 directory."
     fi
@@ -122,7 +122,7 @@ create_dir() {
 
 verify_internet_access() {
     if ! curl --silent --head --fail "$NERDFONTSAPI" > /dev/null; then
-        alert "Couldn't connect to the NerdFont API." >&2
+        alert "Couldn't connect to the NerdFonts API." >&2
         error "Most likely the internet connection is not working."
     fi
 }
@@ -466,6 +466,26 @@ post_install() {
 }
 
 #######################################
+# Add all installed NerdFonts to the SELECTED_FONTS array
+# Globals:
+#   INSTALLED_FONTS
+#   SELECTED_FONTS
+# Arguments:
+#   None
+#######################################
+update_installed_fonts() {
+    get_installed_fonts
+    if [[ ${#INSTALLED_FONTS[@]} -ne 0 ]]; then
+        info "Updating installed NerdFonts: ${INSTALLED_FONTS[*]}"
+        for font in "${INSTALLED_FONTS[@]}"; do
+            SELECTED_FONTS+=("$font")
+        done
+    else
+        error "Found no installed NerdFonts."
+    fi
+}
+
+#######################################
 # Display installed fonts
 # Globals:
 #   INSTALLED_FONTS
@@ -587,7 +607,6 @@ handle_user_input() {
 #   None
 #######################################
 menu_install() {
-    get_all_fonts
     get_installed_fonts
     filter_installed_fonts
 
@@ -597,7 +616,7 @@ menu_install() {
 }
 
 main() {
-    while getopts ":hkali:u:V" option; do
+    while getopts ":hkali:u:UV" option; do
         case "${option}" in
             h) display_help && exit 0 ;;
             k) KEEP_FONT_ARCHIVES='true' ;;
@@ -610,6 +629,7 @@ main() {
                 ;;
             i) FONTNAMES="$OPTARG" ;;
             u) uninstall_fonts "$OPTARG" && exit 0 ;;
+            U) UPDATE_INSTALLED_FONTS='true' ;;
             V) display_getnf_version && exit 0 ;;
             :) error "Option '-$OPTARG' requires at least one font name." ;;
             *) display_help && exit 0 ;;
@@ -621,9 +641,12 @@ main() {
 
     check_dependencies
     get_latest_release_version
+    get_all_fonts
 
     SELECTED_FONTS=()
-    if [[ -n "$FONTNAMES" ]]; then
+    if [[ "$UPDATE_INSTALLED_FONTS" == "true" ]]; then
+        update_installed_fonts
+    elif [[ -n "$FONTNAMES" ]]; then
         direct_install "$FONTNAMES"
     else
         menu_install
