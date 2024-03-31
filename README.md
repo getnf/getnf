@@ -8,6 +8,8 @@
 
 Easily install [Nerd Fonts](https://www.nerdfonts.com/) from the terminal.
 
+![image](https://github.com/getnf/getnf/assets/84108846/e60e12d7-5b30-41f9-a95e-742df72ff2b8)
+
 ## Supported Platforms
 `getnf` is supported on macOS and Linux.
 
