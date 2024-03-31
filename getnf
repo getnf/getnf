@@ -11,6 +11,8 @@
 # "Declare and assign separately to avoid masking return values": https://github.com/koalaman/shellcheck/wiki/SC2155
 # "Use 'pushd ... || exit' or 'pushd ... || exit' in case pushd fails": https://github.com/koalaman/shellcheck/wiki/SC2164
 
+readonly VERSION="v0.1.0"
+
 ON_MAC='false'
 if [[ $(uname) == "Darwin" ]]; then
     ON_MAC='true'
@@ -65,6 +67,7 @@ OPTIONS:
   -l          show the list of installed fonts
   -i <font>   directly install the specified fonts
   -u <font>   uninstall the specified fonts
+  -V          display current getnf version
 
 To install fonts using the menu:
 - Choose one or more fonts (by index/number) to install
@@ -501,6 +504,17 @@ display_installed_fonts() {
 }
 
 #######################################
+# Display getnf release version
+# Globals:
+#   VERSION
+# Arguments:
+#   None
+#######################################
+display_getnf_version() {
+    echo "$VERSION"
+}
+
+#######################################
 # Display the font menu
 # Globals:
 #   RELEASE
@@ -598,7 +612,7 @@ menu_install() {
 }
 
 main() {
-    while getopts ":hkali:u:" option; do
+    while getopts ":hkali:u:V" option; do
         case "${option}" in
             h) display_help && exit 0 ;;
             k) KEEP_FONT_ARCHIVES='true' ;;
@@ -606,6 +620,7 @@ main() {
             l) get_all_fonts && get_installed_fonts && display_installed_fonts && exit 0 ;;
             i) FONTNAMES="$OPTARG" ;;
             u) uninstall_fonts "$OPTARG" && exit 0 ;;
+            V) display_getnf_version && exit 0 ;;
             :) error "Option '-$OPTARG' requires at least one font name." ;;
             *) display_help && exit 0 ;;
         esac
