@@ -40,28 +40,23 @@ paru -S getnf
 
 ## Usage
 
-Run getnf to display the list of available Nerd Fonts and install the selected ones.
+Run `getnf` to show the font menu.
 
-Run `getnf -h` to get the help message.
+There are several flags available:
 
-- run `getnf` from the terminal and it will present you with the list of Nerd Fonts
-- choose one or more fonts (by index/number) to install
-- hit Return/Enter to install the selected fonts
-- type 'q' to quit
+| Flag                                             | Description                              |
+| ------------------------------------------------ | ---------------------------------------- |
+| `-h`                                             | Show the help message                    |
+| `-k`                                             | Keep the downloaded font archives        |
+| `-a`                                             | Include installed Nerd Fonts in the menu |
+| `-l`                                             | List installed Nerd Fonts                |
+| `-i <font>`                                      | Directly install a specified Nerd Font   |
+| `-i <name1>,<name2>`,<br> `-i "<name1> <name2>"` | Directly install multiple Nerd Fonts     |
+| `-u <font>`                                             | Uninstall a specified Nerd Font          |
+| `-u <name1>,<name2>`,<br> `-u "<name1> <name2>"` | Uninstall multiple Nerd Fonts            |
+| `-U`                                             | Update all installed Nerd Fonts          |
+| `-V`                                             | Print the current version of `getnf`     |
 
-By default the downloaded font archives are removed,
-use the `-k` flag to keep the font archives in the downloads directory.
-
-By default, the already installed fonts are not listed in the font menu,
-unless there is a new version of Nerd Fonts available.
-You can change that by using the `-a` flag.
-
-If you know the exact font you want to install,
-you can do it directly with `getnf -i <font-name>`.<br>
-Use `getnf -i <name1>,<name2>` or `getnf -i "<name1> <name2>"`
-to install multiple fonts.<br>
-You can get the names of the fonts from the menu.
-
-To uninstall fonts use the `-u` flag with the same syntax as for direct install.
+You can get the exact names of the fonts to use with `-i` and `-u` from the font menu.
 
 Enjoy!
