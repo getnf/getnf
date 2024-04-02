@@ -165,7 +165,6 @@ play_loading_animation_loop() {
 }
 
 start_loading_animation() {
-    unset "BLA_active_loading_animation[0]"
     if command -v tput > /dev/null; then
         tput civis # Hide the terminal cursor
     fi
