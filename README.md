@@ -1,3 +1,5 @@
+![getnf-logo](getnf-logo.svg)
+
 # `getnf` - Get Nerd Fonts
 
 <!-- [![getnf](https://img.shields.io/github/v/release/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/releases/latest) -->
