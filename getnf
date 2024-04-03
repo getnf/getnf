@@ -13,9 +13,6 @@
 # "Use 'pushd ... || exit' or 'pushd ... || exit' in case pushd fails":
 #  https://www.shellcheck.net/wiki/SC2164
 
-# Disable all messages about background process termination
-set +m
-
 readonly VERSION="v0.1.0"
 
 ON_MAC='false'
@@ -321,13 +318,22 @@ filter_installed_fonts() {
 #   Font name
 #######################################
 download_font() {
-    echo -n "Downloading $1...  "
-    local opts=("--silent" "--location" "--remote-header-name" "--remote-name")
-    trap stop_loading_animation SIGINT
-    start_loading_animation
-    curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
-    stop_loading_animation
-    confirm "Done"
+    local opts=("--location" "--remote-header-name" "--remote-name")
+    if [[ $ON_MAC == "false" ]]; then
+        opts+=("--silent")
+        echo -n "Downloading $1...  "
+        trap stop_loading_animation SIGINT
+        start_loading_animation
+        curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
+        stop_loading_animation
+        confirm "Done"
+    else
+        # TODO: figure out how to disable messages about bg process termination
+        opts+=("--progress-bar")
+        info "$1 download started..."
+        curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
+        confirm "$1 download finished"
+    fi
 }
 
 #######################################
