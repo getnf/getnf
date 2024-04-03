@@ -13,6 +13,9 @@
 # "Use 'pushd ... || exit' or 'pushd ... || exit' in case pushd fails":
 #  https://www.shellcheck.net/wiki/SC2164
 
+# Disable all messages about background process termination
+set +m
+
 readonly VERSION="v0.1.0"
 
 ON_MAC='false'
