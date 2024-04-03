@@ -478,12 +478,18 @@ post_install() {
 update_installed_fonts() {
     get_installed_fonts
     if [[ ${#INSTALLED_FONTS[@]} -ne 0 ]]; then
-        info "Updating installed NerdFonts: ${INSTALLED_FONTS[*]}"
         for font in "${INSTALLED_FONTS[@]}"; do
-            SELECTED_FONTS+=("$font")
+            if ! is_latest_version "$font"; then
+                SELECTED_FONTS+=("$font")
+            fi
         done
+        if [[ ${#SELECTED_FONTS[@]} -eq 0 ]]; then
+            confirm "All installed NerdFonts are up to date."
+            exit 0
+        fi
+        info "Updating installed NerdFonts: ${SELECTED_FONTS[*]}"
     else
-        error "Found no installed NerdFonts."
+        error "No installed NerdFonts found."
     fi
 }
 
@@ -586,7 +592,7 @@ handle_user_input() {
         for choice in $(echo "$choices" | tr ',' ' '); do
             if [[ $choice == "q" ]]; then
                 confirm "Goodbye!"
-                exit
+                exit 0
             # Choice is a range (e.g. 1-3)
             elif [[ $choice == *-* ]]; then
                 parse_range "$choice" || continue 2
