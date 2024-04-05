@@ -25,6 +25,7 @@ jobs:
           [[ -f "$HOME/.local/bin/getnf" ]] && rm -f "$HOME/.local/bin/getnf" || :
           bash ${{ github.workspace }}/install.sh
           test -f "$HOME/.local/bin/getnf"
+          $HOME/.local/bin/getnf -V
       - name: Install fonts
         run: |
           ./getnf -i JetBrainsMono,CascadiaCode
