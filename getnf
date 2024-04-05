@@ -138,6 +138,16 @@ check_dependencies() {
     [[ -d "$FONT_RELEASES_DIR" ]] || mkdir -p "$FONT_RELEASES_DIR"
 }
 
+erase_line() {
+    # Move up a line and erase
+    printf "\033[1A\033[2K"
+}
+
+erase_char() {
+    # Move left one char and erase
+    printf "\033[1D\033[K"
+}
+
 ###############################################################################
 # Animation Functions
 # Credit: https://github.com/Silejonu/bash_loading_animations
@@ -173,9 +183,7 @@ start_loading_animation() {
 }
 
 stop_loading_animation() {
-    # printf "\033[1A\033[2K" # Move up a line and erase
-    # Move left one char and erase
-    printf "\033[1D\033[K"
+    erase_char
     kill "${LOADING_ANIMATION_PID}" &> /dev/null
     if command -v tput > /dev/null; then
         tput cnorm # Restore the terminal cursor
@@ -330,9 +338,11 @@ download_font() {
     else
         # TODO: figure out how to disable messages about bg process termination
         opts+=("--progress-bar")
-        info "$1 download started..."
+        info "Downloading $1... "
         curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
-        confirm "$1 download finished"
+        erase_line
+        erase_line
+        echo "Downloading $1... ${GREEN}Done${RESET}"
     fi
 }
 
