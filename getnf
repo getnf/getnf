@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# getNF: A Better way to install NerdFonts
+# getnf: A better way to install Nerd Fonts
 #
 # Author: @ronniedroid
 # Maintainer: @trimclain
@@ -15,14 +15,14 @@
 
 readonly VERSION="v0.1.0"
 
+readonly NERDFONTSAPI='https://api.github.com/repos/ryanoasis/nerd-fonts'
+readonly NERDFONTSREPO='https://github.com/ryanoasis/nerd-fonts'
+
 ON_MAC='false'
 if [[ $(uname) == "Darwin" ]]; then
     ON_MAC='true'
 fi
 readonly ON_MAC
-
-readonly NERDFONTSAPI='https://api.github.com/repos/ryanoasis/nerd-fonts'
-readonly NERDFONTSREPO='https://github.com/ryanoasis/nerd-fonts'
 
 DIST_DIR="$HOME/.local/share/fonts"
 if [[ "$ON_MAC" == "true" ]]; then
@@ -45,6 +45,8 @@ NEW_RELEASE_AVAILABLE='false'
 KEEP_FONT_ARCHIVES='false'
 INCLUDE_INSTALLED_FONTS='false'
 UPDATE_INSTALLED_FONTS='false'
+DISPLAY_INSTALLED_FONTS='false'
+DISPLAY_ALL_FONTS='false'
 
 if command -v tput > /dev/null; then
     # tput is part of the ncurses package
@@ -57,19 +59,18 @@ fi
 
 display_help() {
     cat << EOF
-getNF: A Better way to install NerdFonts
-
 Usage:
   getnf [options]
 
 OPTIONS:
   -h          display this help message
   -k          keep the downloaded font archives
-  -a          show already installed fonts in the menu
-  -l          show the list of installed fonts
-  -i <font>   directly install the specified fonts
-  -u <font>   uninstall the specified fonts
-  -U          update all installed NerdFonts
+  -a          show already installed Nerd Fonts in the menu
+  -l          show the list of installed Nerd Fonts
+  -L          show the list of all Nerd Fonts
+  -i <font>   directly install the specified Nerd Fonts
+  -u <font>   uninstall the specified Nerd Fonts
+  -U          update all installed Nerd Fonts
   -V          display current getnf version
 
 To install fonts using the menu:
@@ -113,16 +114,15 @@ ensure_installed() {
     fi
 }
 
-create_dir() {
-    if [[ ! -d "$1" ]]; then
-        mkdir -p "$1"
-        confirm "Created the $2 directory."
-    fi
+create_dirs() {
+    mkdir -p "$DIST_DIR"
+    mkdir -p "$DOWN_DIR"
+    mkdir -p "$FONT_RELEASES_DIR"
 }
 
 verify_internet_access() {
     if ! curl --silent --head --fail "$NERDFONTSAPI" > /dev/null; then
-        alert "Couldn't connect to the NerdFonts API." >&2
+        alert "Couldn't connect to the Nerd Fonts API." >&2
         error "Most likely the internet connection is not working."
     fi
 }
@@ -133,9 +133,7 @@ check_dependencies() {
         ensure_installed fc-cache
     fi
     verify_internet_access
-    create_dir "$DIST_DIR" "Fonts"
-    create_dir "$DOWN_DIR" "Fonts Download"
-    [[ -d "$FONT_RELEASES_DIR" ]] || mkdir -p "$FONT_RELEASES_DIR"
+    create_dirs
 }
 
 erase_line() {
@@ -236,8 +234,8 @@ is_latest_version() {
 }
 
 #######################################
-# Create a local file with all fonts from the NerdFonts repo.
-# We can do this since the list doesn't change often.
+# Create a local file with all fonts from the Nerd Fonts repo.
+# We can do this since the list only changes with a new release.
 # Globals:
 #   NERDFONTSAPI
 # Arguments:
@@ -251,9 +249,10 @@ create_all_fonts_file() {
 }
 
 #######################################
-# Create the global array ALL_FONTS with all fonts from the NerdFonts repo
+# Create the global array ALL_FONTS with all fonts from the Nerd Fonts repo
 # Globals:
 #   ALL_FONTS_FILE
+#   NEW_RELEASE_AVAILABLE
 # Arguments:
 #   None
 #######################################
@@ -281,7 +280,7 @@ get_installed_fonts() {
     local installed_user_fonts=("$DIST_DIR"/*)
     # leave only the basenames
     installed_user_fonts=("${installed_user_fonts[@]##*/}")
-    # filter NerdFonts
+    # filter Nerd Fonts
     INSTALLED_FONTS=()
     for font in "${ALL_FONTS[@]}"; do
         if [[ " ${installed_user_fonts[*]} " == *" $font "* ]]; then
@@ -484,7 +483,7 @@ post_install() {
 }
 
 #######################################
-# Add all installed NerdFonts to the SELECTED_FONTS array
+# Add all installed Nerd Fonts to the SELECTED_FONTS array
 # Globals:
 #   INSTALLED_FONTS
 #   SELECTED_FONTS
@@ -500,12 +499,12 @@ update_installed_fonts() {
             fi
         done
         if [[ ${#SELECTED_FONTS[@]} -eq 0 ]]; then
-            confirm "All installed NerdFonts are up to date."
+            confirm "All installed Nerd Fonts are up to date."
             exit 0
         fi
-        info "Updating installed NerdFonts: ${SELECTED_FONTS[*]}"
+        info "Updating installed Nerd Fonts: ${SELECTED_FONTS[*]}"
     else
-        error "No installed NerdFonts found."
+        error "No installed Nerd Fonts found."
     fi
 }
 
@@ -519,7 +518,7 @@ update_installed_fonts() {
 #######################################
 display_installed_fonts() {
     if [[ ${#INSTALLED_FONTS[@]} -ne 0 ]]; then
-        title "Installed NerdFonts:"
+        title "Installed Nerd Fonts:"
         for font in "${INSTALLED_FONTS[@]}"; do
             local font_release_file="$FONT_RELEASES_DIR/${font}_release.txt"
             if [[ -f "$font_release_file" ]]; then
@@ -544,6 +543,19 @@ display_getnf_version() {
 }
 
 #######################################
+# Display the list of all fonts
+# Globals:
+#   RELEASE
+#   ALL_FONTS_FILE
+# Arguments:
+#   None
+#######################################
+display_all_fonts() {
+    title "Nerd Fonts ${RELEASE}:"
+    cat "$ALL_FONTS_FILE"
+}
+
+#######################################
 # Display the font menu
 # Globals:
 #   RELEASE
@@ -553,7 +565,7 @@ display_getnf_version() {
 #######################################
 display_font_menu() {
     local term_width=$(stty size | cut -d ' ' -f 2)
-    title "NerdFonts ${RELEASE}:"
+    title "Nerd Fonts ${RELEASE}:"
     (
         for i in "${!FONT_OPTIONS[@]}"; do
             printf "%d) %s\n" "$((i + 1))" "${FONT_OPTIONS[$i]}"
@@ -620,7 +632,7 @@ handle_user_input() {
                 continue 2
             fi
         done
-        title "Selected NerdFonts: ${SELECTED_FONTS[*]}"
+        title "Selected Nerd Fonts: ${SELECTED_FONTS[*]}"
         break
     done
 }
@@ -640,17 +652,13 @@ menu_install() {
 }
 
 main() {
-    while getopts ":hkali:u:UV" option; do
+    while getopts ":hkalLi:u:UV" option; do
         case "${option}" in
             h) display_help && exit 0 ;;
             k) KEEP_FONT_ARCHIVES='true' ;;
             a) INCLUDE_INSTALLED_FONTS='true' ;;
-            l)
-                get_all_fonts
-                get_installed_fonts
-                display_installed_fonts
-                exit 0
-                ;;
+            l) DISPLAY_INSTALLED_FONTS='true' ;;
+            L) DISPLAY_ALL_FONTS='true' ;;
             i) FONTNAMES="$OPTARG" ;;
             u) uninstall_fonts "$OPTARG" && exit 0 ;;
             U) UPDATE_INSTALLED_FONTS='true' ;;
@@ -666,6 +674,17 @@ main() {
     check_dependencies
     get_latest_release_version
     get_all_fonts
+
+    if [[ "$DISPLAY_INSTALLED_FONTS" == "true" ]]; then
+        get_installed_fonts
+        display_installed_fonts
+        exit 0
+    fi
+
+    if [[ "$DISPLAY_ALL_FONTS" == "true" ]]; then
+        display_all_fonts
+        exit 0
+    fi
 
     SELECTED_FONTS=()
     if [[ "$UPDATE_INSTALLED_FONTS" == "true" ]]; then
