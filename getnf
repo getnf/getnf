@@ -515,20 +515,23 @@ update_installed_fonts() {
 #   FONT_RELEASES_DIR
 # Arguments:
 #   None
+# Returns:
+#   1 if no installed Nerd Fonts found, 0 otherwise
 #######################################
 display_installed_fonts() {
-    if [[ ${#INSTALLED_FONTS[@]} -ne 0 ]]; then
-        title "Installed Nerd Fonts:"
-        for font in "${INSTALLED_FONTS[@]}"; do
-            local font_release_file="$FONT_RELEASES_DIR/${font}_release.txt"
-            if [[ -f "$font_release_file" ]]; then
-                local font_release_version=$(cat "$font_release_file")
-                printf "%s - %s\n" "$font" "$font_release_version"
-            else
-                printf "%s - unknown version\n" "$font"
-            fi
-        done
+    if [[ ${#INSTALLED_FONTS[@]} -eq 0 ]]; then
+        return 1
     fi
+    title "Installed Nerd Fonts:"
+    for font in "${INSTALLED_FONTS[@]}"; do
+        local font_release_file="$FONT_RELEASES_DIR/${font}_release.txt"
+        if [[ -f "$font_release_file" ]]; then
+            local font_release_version=$(cat "$font_release_file")
+            printf "%s - %s\n" "$font" "$font_release_version"
+        else
+            printf "%s - unknown version\n" "$font"
+        fi
+    done
 }
 
 #######################################
@@ -677,7 +680,9 @@ main() {
 
     if [[ "$DISPLAY_INSTALLED_FONTS" == "true" ]]; then
         get_installed_fonts
-        display_installed_fonts
+        if ! display_installed_fonts; then
+            info "No installed Nerd Fonts found."
+        fi
         exit 0
     fi
 
