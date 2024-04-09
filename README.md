@@ -22,12 +22,14 @@ Easily install [Nerd Fonts](https://www.nerdfonts.com/) from the terminal.
 - fontconfig *(only on Linux)*
 
 ## Installation
+Make sure that `~/.local/bin` is in your PATH.
+
+Run
 
 ```
 curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
 ```
-
-Make sure that `~/.local/bin` is in your PATH.
+to install the latest version of `getnf`, or check out the branch [release-0.1](https://github.com/getnf/getnf/tree/release-0.1) to install the latest release.
 
 You can suppress the installation output with a flag `--silent` or `-s`:
 ```
