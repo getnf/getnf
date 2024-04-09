@@ -19,9 +19,9 @@ fi
 mkdir -p "$DEST"
 
 if [[ "$SILENT" == "true" ]]; then
-    curl -fsSL# https://raw.githubusercontent.com/getnf/getnf/main/getnf --output getnf.tmp
+    curl -fsSL# https://raw.githubusercontent.com/getnf/getnf/release-0.1/getnf --output getnf.tmp
 else
-    curl -fL# https://raw.githubusercontent.com/getnf/getnf/main/getnf --output getnf.tmp
+    curl -fL# https://raw.githubusercontent.com/getnf/getnf/release-0.1/getnf --output getnf.tmp
 fi
 
 mv -f getnf.tmp "$GETNFLOC"
