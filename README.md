@@ -24,14 +24,14 @@ Easily install [Nerd Fonts](https://www.nerdfonts.com/) from the terminal.
 ## Installation
 
 ```
-curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/getnf/getnf/release-0.1/install.sh | bash
 ```
 
 Make sure that `~/.local/bin` is in your PATH.
 
 You can suppress the installation output with a flag `--silent` or `-s`:
 ```
-curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --silent
+curl -fsSL https://raw.githubusercontent.com/getnf/getnf/release-0.1/install.sh | bash -s -- --silent
 ```
 
 ### Packages
