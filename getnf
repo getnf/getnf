@@ -51,9 +51,9 @@ DISPLAY_ALL_FONTS='false'
 if command -v tput > /dev/null; then
     # tput is part of the ncurses package
     # Colors: https://www.ditig.com/publications/256-colors-cheat-sheet
+    readonly OLIVE=$(tput setaf 3)
     readonly RED=$(tput setaf 9)
     readonly GREEN=$(tput setaf 2)
-    readonly TEAL=$(tput setaf 6)
     readonly RESET=$(tput sgr0)
 fi
 
@@ -92,7 +92,7 @@ info() {
 }
 
 title() {
-    printf "\n${TEAL}%b${RESET}\n" "$1"
+    printf "\n${OLIVE}%b${RESET}\n" "$1"
 }
 
 confirm() {
@@ -201,7 +201,7 @@ stop_loading_animation() {
 #   None
 #######################################
 get_latest_release_version() {
-    RELEASE=$(curl --silent "$NERDFONTSAPI/releases/latest" |
+    readonly RELEASE=$(curl --silent "$NERDFONTSAPI/releases/latest" |
         awk -v RS=',' -F'"' '/tag_name/ {print $4}')
     if [[ -f "$RELEASE_FILE" ]]; then
         local current_release=$(cat "$RELEASE_FILE")
@@ -290,7 +290,7 @@ get_installed_fonts() {
 }
 
 #######################################
-# Create the global FONT_OPTIONS array by removing installed fonts
+# Create the global array FONT_OPTIONS by removing installed fonts
 # from the list of all fonts if they are from current release
 # or if the user does not want to force the update
 # Globals:
@@ -542,7 +542,7 @@ display_installed_fonts() {
 #   None
 #######################################
 display_getnf_version() {
-    echo "$VERSION"
+    echo "getnf $VERSION"
 }
 
 #######################################
