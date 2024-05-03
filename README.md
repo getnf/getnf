@@ -29,9 +29,12 @@ Run
 ```
 curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
 ```
-to install the latest version of `getnf`, or check out the branch [release-0.1](https://github.com/getnf/getnf/tree/release-0.1) to install the latest release.
+to install the latest version of `getnf`, or install the [latest release](https://github.com/getnf/getnf/releases/latest) with
+```
+curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --branch=release-0.1
+```
 
-You can suppress the installation output with a flag `--silent` or `-s`:
+You can suppress the installation output with the flag `--silent` or `-s`:
 ```
 curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --silent
 ```
