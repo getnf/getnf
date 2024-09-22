@@ -11,30 +11,30 @@ if command -v tput > /dev/null; then
 fi
 
 SILENT='false'
-BRANCH='main'
+TAG='main'
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -s | --silent) readonly SILENT='true' ;;
-        -b | --branch)
+        -t | --tag)
             if [[ -n "$2" ]] && [[ "$2" != -* ]]; then
-                readonly BRANCH="$2"
+                readonly TAG="$2"
                 shift
             else
-                echo "Option --branch requires an argument"
+                echo "Option --tag requires an argument"
                 exit 1
             fi
             ;;
-        --branch=?*)
-            readonly BRANCH="${1#*=}"
+        --tag=?*)
+            readonly TAG="${1#*=}"
             ;;
         *) echo "Invalid argument: $1" && exit 1 ;;
     esac
     shift
 done
 
-if [[ "$BRANCH" != "main" && ! "$BRANCH" =~ ^release-0\.[1-9]$ ]]; then
-    echo "Branch $BRANCH does not exist."
+if [[ "$TAG" != "main" && ! "$TAG" =~ ^v0\.[1-9]\.[0-9]+$ ]]; then
+    echo "Tag $TAG does not exist."
     exit 1
 fi
 
@@ -43,9 +43,9 @@ fi
 mkdir -p "$DEST"
 
 if [[ "$SILENT" == "true" ]]; then
-    curl -fsSL# "https://raw.githubusercontent.com/getnf/getnf/$BRANCH/getnf" --output getnf.tmp
+    curl -fsSL# "https://raw.githubusercontent.com/getnf/getnf/$TAG/getnf" --output getnf.tmp
 else
-    curl -fL# "https://raw.githubusercontent.com/getnf/getnf/$BRANCH/getnf" --output getnf.tmp
+    curl -fL# "https://raw.githubusercontent.com/getnf/getnf/$TAG/getnf" --output getnf.tmp
 fi
 
 mv -f getnf.tmp "$GETNFLOC"

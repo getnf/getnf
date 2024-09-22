@@ -31,7 +31,7 @@ curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
 ```
 to install the latest version of `getnf`, or install the [latest release](https://github.com/getnf/getnf/releases/latest) with
 ```
-curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --branch=release-0.1
+curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --tag=v0.1.0
 ```
 
 You can suppress the installation output with the flag `--silent` or `-s`:
