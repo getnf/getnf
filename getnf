@@ -42,6 +42,7 @@ INCLUDE_INSTALLED_FONTS='false'
 UPDATE_INSTALLED_FONTS='false'
 DISPLAY_INSTALLED_FONTS='false'
 DISPLAY_ALL_FONTS='false'
+INSTALL_WITH_FZF='false'
 
 if command -v tput > /dev/null; then
     # tput is part of the ncurses package
@@ -64,6 +65,7 @@ OPTIONS:
   -g          install/uninstall/list/update Nerd Fonts for all users
   -l          show the list of installed Nerd Fonts
   -L          show the list of all Nerd Fonts
+  -f          select and install Nerd Fonts using fzf
   -i <font>   directly install the specified Nerd Fonts
   -u <font>   uninstall the specified Nerd Fonts
   -U          update all installed Nerd Fonts
@@ -508,7 +510,8 @@ post_install() {
 }
 
 #######################################
-# Add all installed Nerd Fonts to the SELECTED_FONTS array
+# Add all installed Nerd Fonts that are not the latest version
+# to the SELECTED_FONTS array
 # Globals:
 #   INSTALLED_FONTS
 #   SELECTED_FONTS
@@ -696,8 +699,25 @@ menu_install() {
     handle_user_input
 }
 
+#######################################
+# Select fonts using fzf and add them to the SELECTED_FONTS array
+# Globals:
+#   ALL_FONTS
+#   SELECTED_FONTS
+# Arguments:
+#   None
+#######################################
+
+fzf_install() {
+    ensure_installed fzf
+    local selected_fonts=$(printf "%s\n" "${ALL_FONTS[@]}" | fzf --multi)
+    for font_name in $selected_fonts; do
+        SELECTED_FONTS+=("$font_name")
+    done
+}
+
 main() {
-    while getopts ":hkaglLi:u:UV" option; do
+    while getopts ":hkaglLfi:u:UV" option; do
         case "${option}" in
             h) display_help && exit 0 ;;
             k) readonly KEEP_FONT_ARCHIVES='true' ;;
@@ -705,6 +725,7 @@ main() {
             g) readonly OPERATE_GLOBALLY='true' ;;
             l) readonly DISPLAY_INSTALLED_FONTS='true' ;;
             L) readonly DISPLAY_ALL_FONTS='true' ;;
+            f) readonly INSTALL_WITH_FZF='true' ;;
             i) readonly FONTNAMES="$OPTARG" ;;
             u) uninstall_fonts "$OPTARG" && exit 0 ;;
             U) readonly UPDATE_INSTALLED_FONTS='true' ;;
@@ -739,6 +760,8 @@ main() {
     SELECTED_FONTS=()
     if [[ "$UPDATE_INSTALLED_FONTS" == "true" ]]; then
         update_installed_fonts
+    elif [[ "$INSTALL_WITH_FZF" == "true" ]]; then
+        fzf_install
     elif [[ -n "$FONTNAMES" ]]; then
         direct_install "$FONTNAMES"
     else

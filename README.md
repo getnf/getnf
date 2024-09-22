@@ -16,9 +16,9 @@ Easily install [Nerd Fonts](https://www.nerdfonts.com/) from the terminal.
 ## Supported Platforms
 `getnf` is supported on macOS and Linux.
 
-## Prerequisites
-
+## Requirements
 - curl
+- fzf *(optional)*
 
 ## Installation
 Make sure that `~/.local/bin` is in your PATH.
@@ -39,32 +39,31 @@ curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash 
 ```
 
 ### Packages
-
 On Arch Linux you can install `getnf` from the [AUR](https://aur.archlinux.org/packages/getnf):
 ```
 paru -S getnf
 ```
 
 ## Usage
-
 Run `getnf` to show the font menu.
 
 There are several flags available:
 
-| Flag                                             | Description                                            |
-| ------------------------------------------------ | ------------------------------------------------------ |
-| `-h`                                             | Show the help message                                  |
-| `-k`                                             | Keep the downloaded font archives                      |
-| `-a`                                             | Include installed Nerd Fonts in the menu               |
-| `-g`                                             | Install/Uninstall/List/Update Nerd Fonts for all users |
-| `-l`                                             | List installed Nerd Fonts                              |
-| `-L`                                             | List all Nerd Fonts                                    |
-| `-i <font>`                                      | Directly install a specified Nerd Font                 |
-| `-i <name1>,<name2>`,<br> `-i "<name1> <name2>"` | Directly install multiple Nerd Fonts                   |
-| `-u <font>`                                      | Uninstall a specified Nerd Font                        |
-| `-u <name1>,<name2>`,<br> `-u "<name1> <name2>"` | Uninstall multiple Nerd Fonts                          |
-| `-U`                                             | Update all installed Nerd Fonts                        |
-| `-V`                                             | Print the current version of `getnf`                   |
+| Flag                                             | Description                                                                |
+| ------------------------------------------------ | -------------------------------------------------------------------------- |
+| `-h`                                             | Show the help message                                                      |
+| `-k`                                             | Keep the downloaded font archives                                          |
+| `-a`                                             | Include installed Nerd Fonts in the menu                                   |
+| `-g`                                             | Install/Uninstall/List/Update Nerd Fonts for all users                     |
+| `-l`                                             | List installed Nerd Fonts                                                  |
+| `-L`                                             | List all Nerd Fonts                                                        |
+| `-f`                                             | Select and install Nerd Fonts using [fzf](https://github.com/junegunn/fzf) |
+| `-i <font>`                                      | Directly install a specified Nerd Font                                     |
+| `-i <name1>,<name2>`,<br> `-i "<name1> <name2>"` | Directly install multiple Nerd Fonts                                       |
+| `-u <font>`                                      | Uninstall a specified Nerd Font                                            |
+| `-u <name1>,<name2>`,<br> `-u "<name1> <name2>"` | Uninstall multiple Nerd Fonts                                              |
+| `-U`                                             | Update all installed Nerd Fonts                                            |
+| `-V`                                             | Print the current version of `getnf`                                       |
 
 You can get the exact names of the fonts to use with `-i` and `-u` from `getnf -L`.
 
