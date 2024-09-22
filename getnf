@@ -145,9 +145,6 @@ verify_internet_access() {
 
 check_dependencies() {
     ensure_installed curl
-    if [[ "$ON_MAC" == "false" ]]; then
-        ensure_installed fc-cache
-    fi
     verify_internet_access
     create_dirs
 }
@@ -426,19 +423,6 @@ remove_font_archives() {
 }
 
 #######################################
-# Build font information cache files
-# Arguments:
-#   None
-#######################################
-update_font_cache() {
-    if [[ "$ON_MAC" == "false" ]]; then
-        echo -n "Updating font cache... "
-        fc-cache &> /dev/null
-        confirm "Done"
-    fi
-}
-
-#######################################
 # Install the selected font
 # Globals:
 #   DOWN_DIR
@@ -504,19 +488,17 @@ uninstall_fonts() {
             rm -f "$(get_font_release_file "$font")"
             confirm "Done"
         done
-        update_font_cache
     fi
 }
 
 #######################################
-# Update the font cache and remove font archives unless specified otherwise
+# Remove font archives unless specified otherwise
 # Globals:
 #   KEEP_FONT_ARCHIVES
 # Arguments:
 #   None
 #######################################
 post_install() {
-    update_font_cache
     if [[ "$KEEP_FONT_ARCHIVES" == "false" ]]; then
         remove_font_archives
     else

@@ -19,7 +19,6 @@ Easily install [Nerd Fonts](https://www.nerdfonts.com/) from the terminal.
 ## Prerequisites
 
 - curl
-- fontconfig *(only on Linux)*
 
 ## Installation
 Make sure that `~/.local/bin` is in your PATH.
@@ -70,3 +69,9 @@ There are several flags available:
 You can get the exact names of the fonts to use with `-i` and `-u` from `getnf -L`.
 
 Enjoy!
+
+## Notes
+In case you can't see newly installed fonts in your application, you may need to update the font cache with
+```
+fc-cache
+```
