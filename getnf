@@ -139,9 +139,8 @@ create_dirs() {
 }
 
 verify_internet_access() {
-    if ! curl --silent --head --fail "$NERDFONTSAPI" > /dev/null; then
-        alert "Couldn't connect to the Nerd Fonts API." >&2
-        error "Most likely the internet connection is not working."
+    if ! curl --silent --head --fail "https://google.com" > /dev/null; then
+        error "Internet connection is required for getnf to work."
     fi
 }
 
