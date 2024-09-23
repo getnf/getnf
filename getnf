@@ -702,7 +702,7 @@ menu_install() {
 #######################################
 # Select fonts using fzf and add them to the SELECTED_FONTS array
 # Globals:
-#   ALL_FONTS
+#   FONT_OPTIONS
 #   SELECTED_FONTS
 # Arguments:
 #   None
@@ -710,7 +710,11 @@ menu_install() {
 
 fzf_install() {
     ensure_installed fzf
-    local selected_fonts=$(printf "%s\n" "${ALL_FONTS[@]}" | fzf --multi)
+
+    get_installed_fonts
+    filter_installed_fonts
+
+    local selected_fonts=$(printf "%s\n" "${FONT_OPTIONS[@]}" | fzf --multi)
     for font_name in $selected_fonts; do
         SELECTED_FONTS+=("$font_name")
     done
