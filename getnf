@@ -13,7 +13,7 @@
 # "Use 'pushd ... || exit' or 'pushd ... || exit' in case pushd fails":
 #  https://www.shellcheck.net/wiki/SC2164
 
-readonly VERSION="v0.2.0"
+readonly VERSION="v0.3.0"
 
 readonly NERDFONTSAPI='https://api.github.com/repos/ryanoasis/nerd-fonts'
 readonly NERDFONTSREPO='https://github.com/ryanoasis/nerd-fonts'
