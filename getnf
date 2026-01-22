@@ -663,7 +663,7 @@ parse_range() {
 handle_user_input() {
     while true; do
         local choices
-        read -rp "Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5): " choices
+        read -erp "Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5): " choices
         for choice in $(echo "$choices" | tr ',' ' '); do
             if [[ $choice == "q" ]]; then
                 confirm "Goodbye!"
