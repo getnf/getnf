@@ -17,7 +17,7 @@ jobs:
           - ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
       - name: Install getnf
         run: |
           # Reset getnf installation if, for any reason, it was cached
