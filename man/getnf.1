@@ -1,0 +1,70 @@
+.TH GETNF 1 "2026-03-14" "getnf" "User Commands"
+.SH NAME
+getnf \- Get Nerd Fonts from the terminal
+.SH SYNOPSIS
+.B getnf
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B getnf
+is a command line tool that helps you download and install Nerd Fonts from the terminal.
+.SH OPTIONS
+.TP
+.BR \-h
+Show the help message.
+.TP
+.BR \-k
+Keep the downloaded font archives.
+.TP
+.BR \-a
+Include installed Nerd Fonts in the menu.
+.TP
+.BR \-g
+Install, uninstall, list, or update Nerd Fonts for all users.
+.TP
+.BR \-l
+List installed Nerd Fonts.
+.TP
+.BR \-L
+List all available Nerd Fonts.
+.TP
+.BR \-f
+Select and install Nerd Fonts interactively using fzf(1).
+.TP
+.BR \-i " " \fIFONT\fR
+Directly install a specified Nerd Font. Can specify multiple fonts separated by commas or spaces.
+.TP
+.BR \-u " " \fIFONT\fR
+Uninstall a specified Nerd Font. Can specify multiple fonts separated by commas or spaces.
+.TP
+.BR \-U
+Update all installed Nerd Fonts.
+.TP
+.BR \-V
+Print the current version of getnf.
+.SH EXAMPLES
+.TP
+.B getnf
+Launch the interactive menu to select and install Nerd Fonts.
+.TP
+.B getnf -L
+List all available Nerd Fonts.
+.TP
+.B getnf -i JetBrainsMono
+Install a specific font directly without the interactive menu.
+.TP
+.B getnf -i \(dqCascadiaCode Hack GeistMono\(dq
+Install multiple fonts directly without the interactive menu.
+.TP
+.B getnf -gi CascadiaCode,Hack,GeistMono
+Install multiple fonts for all users directly without the interactive menu.
+.TP
+.B getnf -gl
+List fonts that are installed for all users.
+.TP
+.B getnf -gu Hack
+Uninstall a specific font for all users.
+.SH BUGS
+The upstream bug tracker can be found at https://github.com/getnf/getnf/issues.
+.SH AUTHOR
+.B getnf
+was written by @ronniedroid and is maintained by @trimclain.
