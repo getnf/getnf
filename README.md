@@ -3,7 +3,7 @@
 
 # `getnf` - Get Nerd Fonts
 
-<!-- [![getnf](https://img.shields.io/github/v/release/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/releases/latest) -->
+[![getnf](https://img.shields.io/github/v/release/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/releases/latest)
 [![getnf](https://img.shields.io/github/last-commit/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/pulse)
 [![getnf](https://img.shields.io/github/issues/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/issues)
 [![getnf](https://img.shields.io/github/license/getnf/getnf?style=flat-square)](https://github.com/getnf/getnf/blob/master/LICENSE)
@@ -57,7 +57,7 @@ There are several flags available:
 | `-a`                                             | Include installed Nerd Fonts in the menu                                   |
 | `-g`                                             | Install/Uninstall/List/Update Nerd Fonts for all users                     |
 | `-l`                                             | List installed Nerd Fonts                                                  |
-| `-L`                                             | List all Nerd Fonts                                                        |
+| `-L`                                             | List all available Nerd Fonts                                              |
 | `-f`                                             | Select and install Nerd Fonts using [fzf](https://github.com/junegunn/fzf) |
 | `-i <font>`                                      | Directly install a specified Nerd Font                                     |
 | `-i <name1>,<name2>`,<br> `-i "<name1> <name2>"` | Directly install multiple Nerd Fonts                                       |
