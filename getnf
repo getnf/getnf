@@ -139,9 +139,9 @@ create_dirs() {
 }
 
 verify_internet_access() {
-    if ! curl --silent --head --fail "https://google.com" > /dev/null; then
+    curl --silent --fail --connect-timeout 1 --max-time 1 \
+        "http://connectivitycheck.gstatic.com/generate_204" > /dev/null ||
         error "Internet connection is required for getnf to work."
-    fi
 }
 
 check_dependencies() {
