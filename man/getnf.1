@@ -1,70 +1,132 @@
-.TH GETNF 1 "2026-03-14" "getnf" "User Commands"
+.TH GETNF 1 "2026-03-15" "getnf"
 .SH NAME
-getnf \- Get Nerd Fonts from the terminal
+getnf \- download and install Nerd Fonts from the terminal
+
 .SH SYNOPSIS
 .B getnf
-[\fIOPTIONS\fR]
+.RI [ OPTIONS ]
+.br
+.B getnf
+.RB [ \-g ]
+.BI \-i " FONT-LIST"
+.br
+.B getnf
+.RB [ \-g ]
+.BI \-u " FONT-LIST"
+.br
+.B getnf
+.RB [ \-g ]
+.B \-l
+.br
+.B getnf
+.RB [ \-g ]
+.B \-U
+
 .SH DESCRIPTION
 .B getnf
-is a command line tool that helps you download and install Nerd Fonts from the terminal.
+is a command-line tool for downloading, installing, uninstalling, listing,
+and updating Nerd Fonts from the terminal.
+.PP
+It can be used interactively or through command-line options.
+.PP
+For the
+.BR \-i
+and
+.BR \-u
+options,
+.I FONT-LIST
+accepts either of the following forms:
+.IP \(bu 3
+A single font name.
+.IP \(bu 3
+A comma-separated list of font names.
+.IP \(bu 3
+A space-separated list of font names enclosed in single or double quotes.
+
 .SH OPTIONS
 .TP
 .BR \-h
 Show the help message.
+
 .TP
 .BR \-k
-Keep the downloaded font archives.
+Keep downloaded font archives after installation.
+
 .TP
 .BR \-a
-Include installed Nerd Fonts in the menu.
+Include already installed Nerd Fonts in the interactive menu.
+
 .TP
 .BR \-g
-Install, uninstall, list, or update Nerd Fonts for all users.
+Operate on the system-wide font installation for all users.
+
 .TP
 .BR \-l
 List installed Nerd Fonts.
+
 .TP
 .BR \-L
 List all available Nerd Fonts.
+
 .TP
 .BR \-f
-Select and install Nerd Fonts interactively using fzf(1).
+Select and install Nerd Fonts interactively using
+.BR fzf (1).
+
 .TP
-.BR \-i " " \fIFONT\fR
-Directly install a specified Nerd Font. Can specify multiple fonts separated by commas or spaces.
+.BI \-i " FONT-LIST"
+Install the specified font or fonts.
+.I FONT-LIST
+may be a comma-separated list of font names or a space-separated list of font
+names enclosed in quotes.
+
+
 .TP
-.BR \-u " " \fIFONT\fR
-Uninstall a specified Nerd Font. Can specify multiple fonts separated by commas or spaces.
+.BI \-u " FONT-LIST"
+Uninstall the specified font or fonts.
+.I FONT-LIST
+may be a comma-separated list of font names or a space-separated list of font
+names enclosed in quotes.
+
+
 .TP
 .BR \-U
 Update all installed Nerd Fonts.
+
 .TP
 .BR \-V
-Print the current version of getnf.
+Print the current version of
+.BR getnf .
+
 .SH EXAMPLES
 .TP
 .B getnf
-Launch the interactive menu to select and install Nerd Fonts.
+Launch the interactive menu.
 .TP
 .B getnf -L
 List all available Nerd Fonts.
 .TP
 .B getnf -i JetBrainsMono
-Install a specific font directly without the interactive menu.
+Install one font directly.
 .TP
 .B getnf -i \(dqCascadiaCode Hack GeistMono\(dq
-Install multiple fonts directly without the interactive menu.
+Install several fonts directly.
 .TP
 .B getnf -gi CascadiaCode,Hack,GeistMono
-Install multiple fonts for all users directly without the interactive menu.
+Install several fonts for all users.
 .TP
 .B getnf -gl
-List fonts that are installed for all users.
+List fonts installed for all users.
 .TP
 .B getnf -gu Hack
-Uninstall a specific font for all users.
+Uninstall one font for all users.
+
 .SH BUGS
-The upstream bug tracker can be found at https://github.com/getnf/getnf/issues.
+Report bugs at:
+.UR https://github.com/getnf/getnf/issues
+https://github.com/getnf/getnf/issues
+.UE
+
 .SH AUTHOR
 .B getnf
 was written by @ronniedroid and is maintained by @trimclain.
