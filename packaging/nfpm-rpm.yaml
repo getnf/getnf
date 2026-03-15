@@ -1,0 +1,40 @@
+name: getnf
+arch: all
+platform: linux
+version: ${SEMVER}
+section: utils
+maintainer: Arthur McLain <mclain.it@gmail.com>
+description: |-
+  getnf is a command-line tool for managing Nerd Fonts.
+  It lets you install, update, and remove Nerd Fonts from the terminal.
+vendor: getnf
+homepage: https://github.com/getnf/getnf
+license: GPL-3.0-or-later
+depends:
+  - curl
+contents:
+  - src: ./dist/getnf
+    dst: /usr/bin/getnf
+    file_info:
+      mode: 0755
+  - src: ./dist/getnf.1.gz
+    dst: /usr/share/man/man1/getnf.1.gz
+    file_info:
+      mode: 0644
+    type: doc
+  - src: ./README.md
+    dst: /usr/share/doc/getnf/README.md
+    file_info:
+      mode: 0644
+    type: doc
+  - src: ./LICENSE
+    dst: /usr/share/doc/getnf/LICENSE
+    file_info:
+      mode: 0644
+    type: doc
+
+rpm:
+  summary: CLI manager for Nerd Fonts
+
+# yaml-language-server: $schema=https://nfpm.goreleaser.com/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj
