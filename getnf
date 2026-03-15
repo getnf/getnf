@@ -451,8 +451,19 @@ install_font() {
 #   String of font names
 #######################################
 direct_install() {
-    for font_name in $(echo "$1" | tr ',' ' '); do
-        if [[ " ${ALL_FONTS[*]} " == *" $font_name "* ]]; then
+    local font_name candidate found
+    local IFS=', '
+
+    for font_name in $1; do
+        found=0
+        for candidate in "${ALL_FONTS[@]}"; do
+            if [[ "$candidate" == "$font_name" ]]; then
+                found=1
+                break
+            fi
+        done
+
+        if ((found)); then
             SELECTED_FONTS+=("$font_name")
         else
             error "Invalid font name: $font_name. Try again."
