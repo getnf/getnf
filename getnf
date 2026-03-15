@@ -13,7 +13,7 @@
 # "Use 'pushd ... || exit' or 'pushd ... || exit' in case pushd fails":
 #  https://www.shellcheck.net/wiki/SC2164
 
-readonly VERSION="v0.3.0"
+readonly VERSION="0.3.0"
 
 readonly NERDFONTSAPI='https://api.github.com/repos/ryanoasis/nerd-fonts'
 readonly NERDFONTSREPO='https://github.com/ryanoasis/nerd-fonts'
@@ -597,7 +597,7 @@ display_installed_fonts() {
 #   None
 #######################################
 display_getnf_version() {
-    echo "getnf $VERSION"
+    echo "getnf v$VERSION"
 }
 
 #######################################
