@@ -48,9 +48,12 @@ if command -v tput > /dev/null; then
     # tput is part of the ncurses package
     # Colors: https://www.ditig.com/publications/256-colors-cheat-sheet
     readonly OLIVE=$(tput setaf 3)
+    readonly CYAN=$(tput setaf 6)
     readonly RED=$(tput setaf 9)
     readonly GREEN=$(tput setaf 2)
     readonly RESET=$(tput sgr0)
+
+    readonly ITALIC=$'\e[3m'
 fi
 
 display_help() {
@@ -686,7 +689,7 @@ parse_range() {
 handle_user_input() {
     while true; do
         local choices
-        read -erp "Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5): " choices
+        read -erp "${ITALIC}${CYAN}Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5): ${RESET}" choices
         for choice in $(echo "$choices" | tr ',' ' '); do
             if [[ $choice == "q" ]]; then
                 confirm "Goodbye!"
@@ -702,7 +705,6 @@ handle_user_input() {
                 continue 2
             fi
         done
-        title "Selected Nerd Fonts: ${SELECTED_FONTS[*]}"
         break
     done
 }
@@ -795,6 +797,7 @@ main() {
     fi
 
     if ((${#SELECTED_FONTS[@]} > 0)); then
+        title "Selected Nerd Fonts: ${SELECTED_FONTS[*]}"
         for i in "${SELECTED_FONTS[@]}"; do
             install_font "$i"
         done
