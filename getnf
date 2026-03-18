@@ -138,9 +138,21 @@ create_dirs() {
     mkdir -p "$FONT_RELEASES_DIR"
 }
 
+_probe_204() {
+    local url="$1"
+    local connect_timeout="$2"
+    local max_time="$3"
+
+    [[ "$(curl -o /dev/null -s \
+        --connect-timeout "$connect_timeout" \
+        --max-time "$max_time" \
+        -w '%{http_code}' \
+        "$url" 2> /dev/null || true)" == "204" ]]
+}
+
 verify_internet_access() {
-    curl --silent --fail --connect-timeout 1 --max-time 1 \
-        "http://connectivitycheck.gstatic.com/generate_204" > /dev/null ||
+    _probe_204 "http://connectivitycheck.gstatic.com/generate_204" 1 2 ||
+        _probe_204 "https://cp.cloudflare.com/generate_204" 2 3 ||
         error "Internet connection is required for getnf to work."
 }
 
