@@ -737,8 +737,14 @@ fzf_install() {
 
     get_installed_fonts
     filter_installed_fonts
-
-    local selected_fonts=$(printf "%s\n" "${FONT_OPTIONS[@]}" | fzf --multi)
+    local fzf_header=$(printf "${OLIVE}Nerd Fonts %b${RESET}\n${ITALIC}${CYAN}TAB selects • ENTER installs • ESC cancels${RESET}" "$RELEASE")
+    local fzf_flags=(
+        --multi --cycle
+        --height=~80% --min-height=12 --layout=reverse --border
+        --header="$fzf_header" --header-first
+        --color 'pointer:green,marker:green'
+    )
+    local selected_fonts=$(printf "%s\n" "${FONT_OPTIONS[@]}" | fzf "${fzf_flags[@]}")
     for font_name in $selected_fonts; do
         SELECTED_FONTS+=("$font_name")
     done
