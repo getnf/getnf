@@ -5,13 +5,17 @@ help:
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 PKGDIR := dist
-SEMVER := $(shell sed -nE 's/^readonly VERSION="([^"]+)"/\1/p' ./getnf)
+SEMVER := $(shell sed -nE 's/^readonly VERSION="([^"-]+([^-"][^"]*)?)(-dev)?"$$/\1/p' ./getnf)
 packages: $(PKGDIR)/getnf $(PKGDIR)/getnf.1.gz ## Build deb and rpm packages
 	SEMVER="$(SEMVER)" nfpm pkg --config ./packaging/nfpm-deb.yaml --packager deb --target .
 	SEMVER="$(SEMVER)" nfpm pkg --config ./packaging/nfpm-rpm.yaml --packager rpm --target .
 
-$(PKGDIR)/getnf: getnf | $(PKGDIR) # fix env-script-interpreter error from rpmlint
-	sed '1s|#!/usr/bin/env bash|#!/bin/bash|' $< > $@
+# Fix env-script-interpreter error from rpmlint and remove dev suffix from VERSION
+$(PKGDIR)/getnf: getnf | $(PKGDIR)
+	sed -E \
+		-e '1s|#!/usr/bin/env bash|#!/bin/bash|' \
+		-e 's/^(readonly VERSION="[^"]+)-dev"$$/\1"/' \
+		$< > $@
 	chmod +x $@
 
 $(PKGDIR)/getnf.1.gz: man/getnf.1 | $(PKGDIR)
@@ -31,7 +35,7 @@ delc: ## Delete both containers
 	docker image rm getnftest-ubuntu:latest -f
 	docker image rm getnftest-fedora:latest -f
 
-rebuild: clean packages delc cont ## Rebuild both packages and containers
+build: clean packages delc cont ## [Re]build both packages and containers
 
 test: ## Run the getnftest-ubuntu container interactively
 	docker run -it getnftest-ubuntu
@@ -45,4 +49,4 @@ release: ## Print commit messages since last tag
 	COMMITS="$$(git log "$$LAST_TAG"..HEAD --pretty=format:'- %s')"; \
 	echo "$$COMMITS"
 
-.PHONY: help packages clean cont delc rebuild test ftest release
+.PHONY: help packages clean cont delc build test ftest release
