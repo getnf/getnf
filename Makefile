@@ -39,4 +39,10 @@ test: ## Run the getnftest-ubuntu container interactively
 ftest: ## Run the getnftest-fedora container interactively
 	docker run -it getnftest-fedora
 
-.PHONY: help packages clean cont delc rebuild test ftest
+release: ## Print commit messages since last tag
+	@LAST_TAG="$$(git describe --tags --abbrev=0 2>/dev/null || true)"; \
+	echo "Commits since $$LAST_TAG:"; \
+	COMMITS="$$(git log "$$LAST_TAG"..HEAD --pretty=format:'- %s')"; \
+	echo "$$COMMITS"
+
+.PHONY: help packages clean cont delc rebuild test ftest release
