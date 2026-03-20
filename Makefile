@@ -45,8 +45,8 @@ ftest: ## Run the getnftest-fedora container interactively
 
 release: ## Print commit messages since last tag
 	@LAST_TAG="$$(git describe --tags --abbrev=0 2>/dev/null || true)"; \
-	echo "Commits since $$LAST_TAG:"; \
-	COMMITS="$$(git log "$$LAST_TAG"..HEAD --pretty=format:'- %s')"; \
+	echo "## Whats New since $$LAST_TAG:"; \
+	COMMITS="$$(git log "$$LAST_TAG"..HEAD --pretty=format:'- %s' --reverse)"; \
 	echo "$$COMMITS"
 
 .PHONY: help packages clean cont delc build test ftest release
