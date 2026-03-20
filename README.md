@@ -20,7 +20,7 @@ Easily install [Nerd Fonts](https://www.nerdfonts.com/) from the terminal.
 - curl
 - fzf *(optional)*
 
-## Installation
+## Install
 Make sure that `~/.local/bin` is in your PATH.
 
 Run
@@ -73,5 +73,16 @@ Enjoy!
 ## Notes
 In case you can't see newly installed fonts in your application, you may need to update the font cache with
 ```
-fc-cache
+fc-cache -f
+```
+
+## Uninstall
+To remove `getnf` without deleting the installed fonts, run
+```
+rm -rf ~/.local/bin/getnf ~/.local/share/getnf
+```
+
+You can also remove the font archive directory from your Downloads folder with
+```
+rm -rf "$(command -v xdg-user-dir >/dev/null && xdg-user-dir DOWNLOAD || printf '%s\n' "$HOME/Downloads")/getnf"
 ```
