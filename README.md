@@ -29,9 +29,9 @@ Run
 curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
 ```
 to install the latest version of `getnf`, or install a specific [release](https://github.com/getnf/getnf/releases) with
-its tag, e.g. `v0.2.0`:
+its tag, e.g. `v0.3.0`:
 ```
-curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --tag=v0.2.0
+curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --tag=v0.3.0
 ```
 
 You can suppress the installation output with the flag `--silent` or `-s`:
@@ -40,10 +40,10 @@ curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash 
 ```
 
 ### Packages
-On Arch Linux you can install `getnf` from the [AUR](https://aur.archlinux.org/packages/getnf):
-```
-paru -S getnf
-```
+`getnf` is available in the AUR as
+[getnf](https://aur.archlinux.org/packages/getnf) and
+[getnf-git](https://aur.archlinux.org/packages/getnf-git).
+Debian and RPM packages are also published with the [latest release](https://github.com/getnf/getnf/releases/latest).
 
 ## Usage
 Run `getnf` to show the font menu.
