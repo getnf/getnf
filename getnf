@@ -481,7 +481,9 @@ direct_install() {
     for font_name in $1; do
         found=0
         for candidate in "${ALL_FONTS[@]}"; do
+            echo "Comparing font_name $font_name and candidate $candidate"
             if [[ "$candidate" == "$font_name" ]]; then
+                echo "Found a match!"
                 found=1
                 break
             fi
@@ -489,6 +491,8 @@ direct_install() {
 
         if ((found)); then
             SELECTED_FONTS+=("$font_name")
+            echo "Adding $font_name to SELECTED_FONTS"
+            echo "New SELECTED_FONTS: ${SELECTED_FONTS[*]}"
         else
             error "Invalid font name: $font_name. Try again."
         fi
