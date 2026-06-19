@@ -23,27 +23,36 @@ Easily install [Nerd Fonts](https://www.nerdfonts.com/) from the terminal.
 ## Install
 Make sure that `~/.local/bin` is in your PATH.
 
-Run
-
-```
+Install the latest version with:
+```sh
 curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash
 ```
-to install the latest version of `getnf`, or install a specific [release](https://github.com/getnf/getnf/releases) with
-its tag, e.g. `v0.3.0`:
+
+To pass options to the installer, use:
+```sh
+curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- <options>
 ```
+
+Installer options:
+- `--tag=<tag>`: Install a specific [release](https://github.com/getnf/getnf/releases), e.g. `--tag=v0.3.0`
+- `--silent`, `-s`: Suppress installation output
+
+Examples:
+```sh
 curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --tag=v0.3.0
-```
-
-You can suppress the installation output with the flag `--silent` or `-s`:
-```
 curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --silent
+curl -fsSL https://raw.githubusercontent.com/getnf/getnf/main/install.sh | bash -s -- --tag=v0.3.0 --silent
 ```
 
-### Packages
-`getnf` is available in the AUR as
-[getnf](https://aur.archlinux.org/packages/getnf) and
-[getnf-git](https://aur.archlinux.org/packages/getnf-git).
-Debian and RPM packages are also published with the [latest release](https://github.com/getnf/getnf/releases/latest).
+## Packages
+`getnf` is available in following packages:
+
+| Source         | Name                                                             | How to install                                  | Notes                   |
+| -------------- | ---------------------------------------------------------------- | ----------------------------------------------- | ----------------------- |
+| AUR            | [`getnf`](https://aur.archlinux.org/packages/getnf)              | `paru -S getnf`                                 | Stable Arch package     |
+| AUR            | [`getnf-git`](https://aur.archlinux.org/packages/getnf-git)      | `paru -S getnf-git`                             | Development version     |
+| Homebrew       | [`getnf/getnf`](https://github.com/getnf/homebrew-getnf)         | `brew install getnf/getnf/getnf`                | macOS / Homebrew users  |
+| Release assets | [Latest release](https://github.com/getnf/getnf/releases/latest) | Download `.deb` or `.rpm`                       | Debian and RPM packages |
 
 ## Usage
 Run `getnf` to show the font menu.
