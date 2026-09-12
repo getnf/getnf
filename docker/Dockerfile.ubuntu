@@ -1,15 +1,14 @@
-FROM ubuntu:latest
+ARG BASE_VERSION=24.04
+FROM ubuntu:${BASE_VERSION}
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     sudo vim curl fzf fontconfig xz-utils \
     unminimize man-db manpages less lintian && \
     yes | unminimize
+ARG SEMVER
+COPY ./dist/packages/getnf_${SEMVER}_all.deb /tmp/
+RUN apt-get update && apt-get install -y /tmp/getnf_${SEMVER}_all.deb
 RUN useradd -m tester && echo "tester:pass" | chpasswd && usermod -aG sudo tester && chown -R tester:tester /home/tester
 USER tester
-# RUN echo 'export PATH=$HOME/.local/bin:$PATH' > /home/tester/.bash_aliases
-# RUN mkdir -p /home/tester/.local/bin/
-# COPY --chown=tester:tester ./getnf /home/tester/.local/bin/getnf
-ARG SEMVER
-COPY --chown=tester:tester ./getnf_${SEMVER}_all.deb /home/tester/getnf_${SEMVER}_all.deb
 WORKDIR /home/tester
 CMD ["/bin/bash"]

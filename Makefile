@@ -1,14 +1,24 @@
 SHELL := /bin/bash
-
-help:
-	@cat $(MAKEFILE_LIST) | grep -E '^[a-zA-Z_-]+:.*?## .*$$' | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+.DEFAULT_GOAL := help
 
 PKGDIR := dist
+OUTDIR := $(PKGDIR)/packages
 SEMVER := $(shell sed -nE 's/^readonly VERSION="([^"-]+([^-"][^"]*)?)(-dev)?"$$/\1/p' ./getnf)
-packages: $(PKGDIR)/getnf $(PKGDIR)/getnf.1.gz ## Build deb and rpm packages
-	SEMVER="$(SEMVER)" nfpm pkg --config ./packaging/nfpm-deb.yaml --packager deb --target .
-	SEMVER="$(SEMVER)" nfpm pkg --config ./packaging/nfpm-rpm.yaml --packager rpm --target .
+
+UBUNTU_VERSION := 24.04
+FEDORA_VERSION := 44
+UBUNTU_IMAGE := getnftest-ubuntu:$(UBUNTU_VERSION)-$(SEMVER)
+FEDORA_IMAGE := getnftest-fedora:$(FEDORA_VERSION)-$(SEMVER)
+
+help:
+	@grep -hE '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+$(PKGDIR):
+	mkdir -p $@
+
+$(OUTDIR): | $(PKGDIR)
+	mkdir -p $@
 
 # Fix env-script-interpreter error from rpmlint and remove dev suffix from VERSION
 $(PKGDIR)/getnf: getnf | $(PKGDIR)
@@ -21,27 +31,32 @@ $(PKGDIR)/getnf: getnf | $(PKGDIR)
 $(PKGDIR)/getnf.1.gz: man/getnf.1 | $(PKGDIR)
 	gzip -n -9 -c $< > $@
 
-$(PKGDIR):
-	mkdir -p $(PKGDIR)
+packages: $(PKGDIR)/getnf $(PKGDIR)/getnf.1.gz | $(OUTDIR) ## Build DEB and RPM packages
+	SEMVER="$(SEMVER)" nfpm pkg --config ./packaging/nfpm-deb.yaml \
+		--packager deb --target "$(OUTDIR)"
+	SEMVER="$(SEMVER)" nfpm pkg --config ./packaging/nfpm-rpm.yaml \
+		--packager rpm --target "$(OUTDIR)"
+
+images: packages  ## Build Ubuntu and Fedora package-test images
+	docker build --build-arg BASE_VERSION="$(UBUNTU_VERSION)" --build-arg SEMVER="$(SEMVER)" \
+		-f ./docker/Dockerfile.ubuntu -t "$(UBUNTU_IMAGE)" .
+	docker build --build-arg BASE_VERSION="$(FEDORA_VERSION)" --build-arg SEMVER="$(SEMVER)" \
+		-f ./docker/Dockerfile.fedora -t "$(FEDORA_IMAGE)" .
+
+test: images ## Open an Ubuntu test shell
+	docker run --rm -it "$(UBUNTU_IMAGE)"
+
+ftest: images ## Open a Fedora test shell
+	docker run --rm -it "$(FEDORA_IMAGE)"
 
 clean: ## Delete the packages
-	rm -rf $(PKGDIR) *.rpm *.deb
+	rm -rf $(PKGDIR)
 
-cont: ## Build 2 docker containers for testing
-	docker build --build-arg SEMVER="$(SEMVER)" -f ./docker/Dockerfile.ubuntu -t getnftest-ubuntu .
-	docker build --build-arg SEMVER="$(SEMVER)" -f ./docker/Dockerfile.fedora -t getnftest-fedora .
+clean-images: ## Delete both images
+	docker image rm "$(UBUNTU_IMAGE)" -f
+	docker image rm "$(FEDORA_IMAGE)" -f
 
-delc: ## Delete both containers
-	docker image rm getnftest-ubuntu:latest -f
-	docker image rm getnftest-fedora:latest -f
-
-build: clean packages delc cont ## [Re]build both packages and containers
-
-test: ## Run the getnftest-ubuntu container interactively
-	docker run -it getnftest-ubuntu
-
-ftest: ## Run the getnftest-fedora container interactively
-	docker run -it getnftest-fedora
+rebuild: clean clean-images images ## Rebuild artifacts and test images
 
 release: ## Print commit messages since last tag
 	@LAST_TAG="$$(git describe --tags --abbrev=0 2>/dev/null || true)"; \
@@ -49,4 +64,4 @@ release: ## Print commit messages since last tag
 	COMMITS="$$(git log "$$LAST_TAG"..HEAD --pretty=format:'- %s' --reverse)"; \
 	echo "$$COMMITS"
 
-.PHONY: help packages clean cont delc build test ftest release
+.PHONY: help packages images test ftest clean clean-images rebuild release
