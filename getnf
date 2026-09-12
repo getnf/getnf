@@ -38,17 +38,31 @@ DISPLAY_INSTALLED_FONTS='false'
 DISPLAY_ALL_FONTS='false'
 INSTALL_WITH_FZF='false'
 
-if command -v tput > /dev/null; then
+DOWN_DIR=''
+FONT_DIR=''
+LOADING_ANIMATION_PID=''
+LOADING_ANIMATION_ACTIVE='false'
+
+OLIVE=''
+CYAN=''
+RED=''
+GREEN=''
+RESET=''
+ITALIC=''
+if command -v tput > /dev/null && [[ -t 1 ]]; then
     # tput is part of the ncurses package
     # Colors: https://www.ditig.com/publications/256-colors-cheat-sheet
-    readonly OLIVE=$(tput setaf 3)
-    readonly CYAN=$(tput setaf 6)
-    readonly RED=$(tput setaf 9)
-    readonly GREEN=$(tput setaf 2)
-    readonly RESET=$(tput sgr0)
-
-    readonly ITALIC=$'\e[3m'
+    OLIVE=$(tput setaf 3)
+    CYAN=$(tput setaf 6)
+    RED=$(tput setaf 9)
+    GREEN=$(tput setaf 2)
+    RESET=$(tput sgr0)
+    ITALIC=$'\e[3m'
 fi
+readonly OLIVE CYAN RED GREEN RESET ITALIC
+
+readonly ANIMATION=('-' "\\" '|' '/')
+readonly FRAME_INTERVAL=0.25
 
 display_help() {
     cat << EOF
@@ -85,19 +99,19 @@ EOF
 }
 
 info() {
-    printf "%s\n" "$1"
+    printf '%s\n' "$1"
 }
 
 title() {
-    printf "\n${OLIVE}%b${RESET}\n" "$1"
+    printf '\n%s%b%s\n' "$OLIVE" "$1" "$RESET"
 }
 
 confirm() {
-    printf "${GREEN}%b${RESET}\n" "$1"
+    printf '%s%b%s\n' "$GREEN" "$1" "$RESET"
 }
 
 alert() {
-    printf "${RED}%b${RESET}\n" "$1"
+    printf '%s%b%s\n' "$RED" "$1" "$RESET"
 }
 
 error() {
@@ -111,6 +125,90 @@ ensure_installed() {
     fi
 }
 
+###############################################################################
+# Animation Functions
+# Credit: https://github.com/Silejonu/bash_loading_animations
+#
+# Usage:
+# Run `stop_loading_animation` if the script is interrupted:
+#trap stop_loading_animation SIGINT
+# Show a loading animation for the command "foo"
+#start_loading_animation
+#foo &> /dev/null
+#stop_loading_animation
+
+erase_line() {
+    # Move up a line and erase
+    printf '\033[1A\033[2K'
+}
+
+erase_char() {
+    # Move left one char and erase
+    printf '\033[1D\033[K'
+}
+
+play_loading_animation_loop() {
+    while true; do
+        local frame
+        for frame in "${ANIMATION[@]}"; do
+            printf '\033[1D\033[K%s' "$frame"
+            sleep "$FRAME_INTERVAL"
+        done
+    done
+}
+
+start_loading_animation() {
+    if command -v tput > /dev/null && [[ -t 1 ]]; then
+        tput civis # Hide the terminal cursor
+    fi
+    play_loading_animation_loop &
+    LOADING_ANIMATION_PID="${!}"
+    LOADING_ANIMATION_ACTIVE='true'
+}
+
+stop_loading_animation() {
+    [[ "$LOADING_ANIMATION_ACTIVE" == "true" ]] || return 0
+    erase_char
+    kill "$LOADING_ANIMATION_PID" &> /dev/null
+    wait "$LOADING_ANIMATION_PID" &> /dev/null
+    LOADING_ANIMATION_PID=''
+    LOADING_ANIMATION_ACTIVE='false'
+    if command -v tput > /dev/null && [[ -t 1 ]]; then
+        tput cnorm # Restore the terminal cursor
+    fi
+}
+###############################################################################
+
+handle_interrupt() {
+    alert '\nInterrupted. Exiting.' >&2
+    exit 130
+}
+
+handle_termination() {
+    alert '\nTerminated. Exiting.' >&2
+    exit 143
+}
+
+handle_hangup() {
+    alert '\nTerminal disconnected. Exiting.' >&2
+    exit 129
+}
+
+cleanup() {
+    stop_loading_animation
+    if [[ -n "$DOWN_DIR" && "$KEEP_FONT_ARCHIVES" == "false" ]]; then
+        rm -rf -- "$DOWN_DIR"
+    fi
+}
+
+#######################################
+# Set the global FONT_DIR
+# Globals:
+#   ON_MAC
+#   OPERATE_GLOBALLY
+# Arguments:
+#   None
+#######################################
 get_font_dir() {
     if [[ "$ON_MAC" == "true" ]] && [[ "$OPERATE_GLOBALLY" == "true" ]]; then
         FONT_DIR="/Library/Fonts"
@@ -141,7 +239,6 @@ init_down_dir() {
         mkdir -p "$DOWN_DIR"
     else
         DOWN_DIR=$(mktemp -d "${TMPDIR:-/tmp}/getnf.XXXXXX")
-        trap 'rm -rf -- "$DOWN_DIR"' EXIT HUP INT TERM
     fi
     readonly DOWN_DIR
 }
@@ -189,59 +286,6 @@ check_dependencies() {
     verify_internet_access
     create_dirs
 }
-
-erase_line() {
-    # Move up a line and erase
-    printf "\033[1A\033[2K"
-}
-
-erase_char() {
-    # Move left one char and erase
-    printf "\033[1D\033[K"
-}
-
-###############################################################################
-# Animation Functions
-# Credit: https://github.com/Silejonu/bash_loading_animations
-#
-# Usage:
-# Run `stop_loading_animation` if the script is interrupted:
-#trap stop_loading_animation SIGINT
-# Show a loading animation for the command "foo"
-#start_loading_animation
-#foo
-#stop_loading_animation
-# Don't forget to redirect the output from "foo"
-
-readonly ANIMATION=('-' "\\" '|' '/')
-readonly FRAME_INTERVAL=0.25
-
-play_loading_animation_loop() {
-    while true; do
-        for frame in "${ANIMATION[@]}"; do
-            printf "\033[1D\033[K"
-            printf "%s" "${frame}"
-            sleep "$FRAME_INTERVAL"
-        done
-    done
-}
-
-start_loading_animation() {
-    if command -v tput > /dev/null; then
-        tput civis # Hide the terminal cursor
-    fi
-    play_loading_animation_loop &
-    LOADING_ANIMATION_PID="${!}"
-}
-
-stop_loading_animation() {
-    erase_char
-    kill "${LOADING_ANIMATION_PID}" &> /dev/null
-    if command -v tput > /dev/null; then
-        tput cnorm # Restore the terminal cursor
-    fi
-}
-###############################################################################
 
 #######################################
 # Create the global RELEASE with the latest release version and
@@ -400,7 +444,6 @@ download_font() {
     if [[ $ON_MAC == "false" ]]; then
         opts+=("--silent")
         echo -n "Downloading $1...  "
-        trap stop_loading_animation SIGINT
         start_loading_animation
         curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
         stop_loading_animation
@@ -604,9 +647,9 @@ display_installed_fonts() {
         local font_release_file="$(get_font_release_file "$font")"
         if [[ -f "$font_release_file" ]]; then
             local font_release_version=$(cat "$font_release_file")
-            printf "%s - %s\n" "$font" "$font_release_version"
+            printf '%s - %s\n' "$font" "$font_release_version"
         else
-            printf "%s - unknown version\n" "$font"
+            printf '%s - unknown version\n' "$font"
         fi
     done
 }
@@ -648,9 +691,9 @@ display_font_menu() {
     title "Nerd Fonts ${RELEASE}:"
     (
         for i in "${!FONT_OPTIONS[@]}"; do
-            printf "%d) %s\n" "$((i + 1))" "${FONT_OPTIONS[$i]}"
+            printf '%d) %s\n' "$((i + 1))" "${FONT_OPTIONS[$i]}"
         done
-        printf "q) Quit\n"
+        printf 'q) Quit\n'
     ) | pr -3 -t -w "$term_width"
 }
 
@@ -744,20 +787,27 @@ fzf_install() {
 
     get_installed_fonts
     filter_installed_fonts
-    local fzf_header=$(printf "${OLIVE}Nerd Fonts %b${RESET}\n${ITALIC}${CYAN}TAB selects • ENTER installs • ESC cancels${RESET}" "$RELEASE")
+    local fzf_header=$(printf \
+        '%sNerd Fonts %s%s\n%s%sTAB selects • ENTER installs • ESC cancels%s' \
+        "$OLIVE" "$RELEASE" "$RESET" "$ITALIC" "$CYAN" "$RESET")
     local fzf_flags=(
         --multi --cycle
         --height=~80% --min-height=12 --layout=reverse --border
         --header="$fzf_header" --header-first
         --color 'pointer:green,marker:green'
     )
-    local selected_fonts=$(printf "%s\n" "${FONT_OPTIONS[@]}" | fzf "${fzf_flags[@]}")
+    local selected_fonts=$(printf '%s\n' "${FONT_OPTIONS[@]}" | fzf "${fzf_flags[@]}")
     for font_name in $selected_fonts; do
         SELECTED_FONTS+=("$font_name")
     done
 }
 
 main() {
+    trap cleanup EXIT
+    trap handle_interrupt INT
+    trap handle_termination TERM
+    trap handle_hangup HUP
+
     while getopts ":hkaglLfi:u:UV" option; do
         case "${option}" in
             h) display_help && exit 0 ;;
