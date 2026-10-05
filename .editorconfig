@@ -21,3 +21,6 @@ space_redirects = true
 
 [*.md]
 trim_trailing_whitespace = false
+
+[*.{yml,yaml}]
+indent_size = 2

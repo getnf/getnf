@@ -1,0 +1,186 @@
+name: Release packages
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository == 'getnf/getnf'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: write
+
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Validate and prepare release version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::Invalid tag '$TAG'; expected vMAJOR.MINOR.PATCH"
+            exit 1
+          fi
+
+          version="$(
+            sed -nE 's/^readonly VERSION="([^"]+)"$/\1/p' getnf
+          )"
+
+          release_version="${TAG#v}"
+
+          if [[ "$version" != "${release_version}-dev" ]]; then
+            echo "::error::Expected VERSION '${release_version}-dev', got '$version'"
+            exit 1
+          fi
+
+          sed -i -E \
+            's/^(readonly VERSION="[^"]+)-dev"$/\1"/' \
+            getnf
+
+          bash -n getnf
+
+          {
+            echo "RELEASE_VERSION=$release_version"
+            echo "DEB_ASSET=dist/packages/getnf_${release_version}_all.deb"
+            echo "RPM_ASSET=dist/packages/getnf-${release_version}-1.noarch.rpm"
+            echo "TARBALL_ASSET=dist/getnf-${release_version}.tar.gz"
+          } >> "$GITHUB_ENV"
+
+      - name: Set up Go for nFPM
+        uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Install nFPM
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Build packages and test images
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          nfpm --version
+          make ci-test
+
+      - name: Check package outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! -d dist/packages ]]; then
+            echo "::error::Package output directory dist/packages is missing"
+            exit 1
+          fi
+
+          echo "Built package files:"
+          ls -lh dist/packages
+
+          for package in "$DEB_ASSET" "$RPM_ASSET"; do
+            if [[ ! -s "$package" ]]; then
+              echo "::error::Expected package is missing or empty: $package"
+              exit 1
+            fi
+          done
+
+      - name: Build and test standalone archive
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          bundle="$RUNNER_TEMP/getnf-bundle"
+          unpacked="$RUNNER_TEMP/getnf-archive-test"
+
+          mkdir -p \
+            dist \
+            "$bundle/bin" \
+            "$bundle/share/man/man1" \
+            "$bundle/share/doc/getnf" \
+            "$unpacked"
+
+          # Use the workflow-prepared script with its original shebang.
+          install -m 0755 getnf "$bundle/bin/getnf"
+          install -m 0644 man/getnf.1 "$bundle/share/man/man1/"
+          install -m 0644 README.md LICENSE "$bundle/share/doc/getnf/"
+
+          tar -czf "$TARBALL_ASSET" -C "$bundle" bin share
+
+          echo "Standalone archive contents:"
+          tar -tzf "$TARBALL_ASSET"
+
+          # Test the extracted release asset, not just the staging files.
+          tar -xzf "$TARBALL_ASSET" -C "$unpacked"
+
+          test -x "$unpacked/bin/getnf"
+          test -s "$unpacked/share/man/man1/getnf.1"
+          test -s "$unpacked/share/doc/getnf/README.md"
+          test -s "$unpacked/share/doc/getnf/LICENSE"
+
+          expected="getnf $TAG"
+          actual="$("$unpacked/bin/getnf" -V)"
+
+          if [[ "$actual" != "$expected" ]]; then
+            printf 'Version mismatch: expected <%s>, got <%s>\n' \
+              "$expected" "$actual" >&2
+            exit 1
+          fi
+
+          "$unpacked/bin/getnf" -h > "$RUNNER_TEMP/getnf-archive-help.txt"
+          grep -q "Usage:" "$RUNNER_TEMP/getnf-archive-help.txt"
+
+      - name: Create draft release with tested assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release_tags="$RUNNER_TEMP/getnf-release-tags.txt"
+
+          gh api --paginate \
+            "repos/$GH_REPO/releases?per_page=100" \
+            --jq '.[].tag_name' > "$release_tags"
+
+          if grep -Fxq -- "$TAG" "$release_tags"; then
+            echo "::error::A release already exists for $TAG. Inspect it before retrying."
+            exit 1
+          fi
+
+          notes_file="$RUNNER_TEMP/getnf-release-notes.md"
+
+          make --no-print-directory -s notes NOTES_REF=HEAD^ > "$notes_file"
+          cat "$notes_file"
+
+          gh release create "$TAG" \
+            "$TARBALL_ASSET" \
+            "$DEB_ASSET" \
+            "$RPM_ASSET" \
+            --verify-tag \
+            --title "getnf $RELEASE_VERSION" \
+            --notes-file "$notes_file" \
+            --draft
