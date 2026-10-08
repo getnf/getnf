@@ -1,4 +1,4 @@
-![getnf logo](assets/getnf-logo.svg)
+![getnf-logo](assets/getnf-logo.svg)
 
 # `getnf` - Get Nerd Fonts
 
