@@ -44,13 +44,7 @@
        height="50.503963"
        id="rect35" /></defs><g
      id="layer1"
-     transform="translate(-53.536746,-149.68102)"><rect
-       style="fill:#ffffff;fill-rule:evenodd;stroke:none;stroke-width:1;paint-order:markers fill stroke;fill-opacity:1;stroke-dasharray:none;stroke-opacity:1;stroke-linejoin:round"
-       id="rect1"
-       width="140"
-       height="45.999996"
-       x="53.536747"
-       y="149.68102" /><g
+     transform="translate(-53.536746,-149.68102)"><g
        id="g23"
        transform="translate(-1.4192947,0.4145761)"><path
          style="fill:#000000;stroke-width:1.48341"
