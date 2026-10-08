@@ -1,4 +1,4 @@
-![getnf logo](getnf-logo.svg)
+![getnf logo](assets/getnf-logo.svg)
 
 # `getnf` - Get Nerd Fonts
 
@@ -10,7 +10,7 @@
 
 Easily install [Nerd Fonts](https://www.nerdfonts.com/) from the terminal.
 
-![image](https://github.com/getnf/getnf/assets/84108846/55e535ea-73af-417f-b65d-7c095d58bdf0)
+![demo](assets/demo.png)
 
 ## Supported Platforms
 
