@@ -33,12 +33,6 @@ NEW_RELEASE_AVAILABLE='false'
 OPERATE_GLOBALLY='false'
 KEEP_FONT_ARCHIVES='false'
 INCLUDE_INSTALLED_FONTS='false'
-UPDATE_INSTALLED_FONTS='false'
-UNINSTALL_FONTS='false'
-UNINSTALL_FONTNAMES=''
-DISPLAY_INSTALLED_FONTS='false'
-DISPLAY_ALL_FONTS='false'
-INSTALL_WITH_FZF='false'
 
 DOWN_DIR=''
 FONT_DIR=''
@@ -351,8 +345,7 @@ is_latest_version() {
 }
 
 #######################################
-# Create a local file with all fonts from the Nerd Fonts repo.
-# We can do this since the list only changes with a new release.
+# Save the font list from the Nerd Fonts master branch to a local file.
 # Globals:
 #   NERDFONTSAPI
 # Arguments:
@@ -374,6 +367,7 @@ create_all_fonts_file() {
 #   None
 #######################################
 get_all_fonts() {
+    local line
     if [[ ! -f "$ALL_FONTS_FILE" || "$NEW_RELEASE_AVAILABLE" == "true" ]]; then
         create_all_fonts_file
     fi
@@ -393,6 +387,7 @@ get_all_fonts() {
 #   None
 #######################################
 get_installed_fonts() {
+    local font
     # list all fonts in FONT_DIR
     local installed_user_fonts=("$FONT_DIR"/*)
     # leave only the basenames
@@ -407,9 +402,9 @@ get_installed_fonts() {
 }
 
 #######################################
-# Create the global array FONT_OPTIONS by removing installed fonts
-# from the list of all fonts if they are from current release
-# or if the user does not want to force the update
+# Create the global array FONT_OPTIONS from ALL_FONTS.
+# Hide installed fonts at the current release unless
+# INCLUDE_INSTALLED_FONTS is enabled.
 # Globals:
 #   INCLUDE_INSTALLED_FONTS
 #   ALL_FONTS
@@ -418,6 +413,7 @@ get_installed_fonts() {
 #   None
 #######################################
 filter_installed_fonts() {
+    local font
     if [[ "$INCLUDE_INSTALLED_FONTS" == "false" ]]; then
         FONT_OPTIONS=()
         for font in "${ALL_FONTS[@]}"; do
@@ -462,7 +458,7 @@ download_font() {
 }
 
 #######################################
-# Extract the font archive to the user fonts directory
+# Extract the font archive to the selected fonts directory
 # Globals:
 #   OPERATE_GLOBALLY
 #   FONT_DIR
@@ -496,7 +492,6 @@ save_font_release() {
 # Install the selected font
 # Globals:
 #   DOWN_DIR
-#   INSTALLED_FONTS_FILE
 # Arguments:
 #   Font name
 #######################################
@@ -541,7 +536,7 @@ direct_install() {
 }
 
 #######################################
-# Parse the string of font names and uninstall them if they are installed
+# Validate all requested fonts before uninstalling getnf-managed installations.
 # Globals:
 #   FONT_DIR
 #   OPERATE_GLOBALLY
@@ -614,6 +609,7 @@ post_install() {
 #   None
 #######################################
 update_installed_fonts() {
+    local font
     get_installed_fonts
     if [[ ${#INSTALLED_FONTS[@]} -ne 0 ]]; then
         for font in "${INSTALLED_FONTS[@]}"; do
@@ -654,6 +650,7 @@ update_installed_fonts() {
 #   1 if no installed Nerd Fonts found, 0 otherwise
 #######################################
 display_installed_fonts() {
+    local font
     if [[ ${#INSTALLED_FONTS[@]} -eq 0 ]]; then
         return 1
     fi
@@ -706,11 +703,12 @@ display_all_fonts() {
 #   None
 #######################################
 display_font_menu() {
+    local font_index
     local term_width=$(stty size | cut -d ' ' -f 2)
     title "Nerd Fonts ${RELEASE}:"
     (
-        for i in "${!FONT_OPTIONS[@]}"; do
-            printf '%d) %s\n' "$((i + 1))" "${FONT_OPTIONS[$i]}"
+        for font_index in "${!FONT_OPTIONS[@]}"; do
+            printf '%d) %s\n' "$((font_index + 1))" "${FONT_OPTIONS[$font_index]}"
         done
         printf 'q) Quit\n'
     ) | pr -3 -t -w "$term_width"
@@ -723,11 +721,12 @@ display_font_menu() {
 #   FONT_OPTIONS
 #   SELECTED_FONTS
 # Arguments:
-#   None
+#   Numeric range, e.g. 1-3
 # Returns:
 #   1 if input format is invalid or if the option is out of range
 #######################################
 parse_range() {
+    local font_number
     if ! [[ $1 =~ ^[0-9]+-[0-9]+$ ]]; then
         alert "Invalid input format: $1. Expected format: X-Y."
         return 1
@@ -736,12 +735,12 @@ parse_range() {
     IFS='-' read -ra range <<< "$1"
     local range_start=${range[0]}
     local range_end=${range[1]}
-    for ((i = range_start; i <= range_end; i++)); do
-        local index=$((i - 1))
+    for ((font_number = range_start; font_number <= range_end; font_number++)); do
+        local index=$((font_number - 1))
         if ((index >= 0 && index < ${#FONT_OPTIONS[@]})); then
             SELECTED_FONTS[index]=${FONT_OPTIONS[index]}
         else
-            alert "Invalid option: $i. Try again."
+            alert "Invalid option: $font_number. Try again."
             return 1
         fi
     done
@@ -756,6 +755,7 @@ parse_range() {
 #   None
 #######################################
 handle_user_input() {
+    local choice
     while true; do
         local choices
         read -erp "${ITALIC}${CYAN}Enter font number(s) (e.g. 1,2,3 or 1-3 or 1,3-5): ${RESET}" choices
@@ -802,6 +802,7 @@ menu_install() {
 #######################################
 
 fzf_install() {
+    local font_name
     ensure_installed fzf
 
     get_installed_fonts
@@ -822,6 +823,15 @@ fzf_install() {
 }
 
 main() {
+    local update_installed_fonts='false'
+    local uninstall_fonts='false'
+    local uninstall_font_names=''
+    local display_installed_fonts='false'
+    local display_all_fonts='false'
+    local install_with_fzf='false'
+    local install_font_names=''
+    local option font
+
     trap cleanup EXIT
     trap handle_interrupt INT
     trap handle_termination TERM
@@ -830,18 +840,18 @@ main() {
     while getopts ":hkaglLfi:u:UV" option; do
         case "${option}" in
             h) display_help && exit 0 ;;
-            k) readonly KEEP_FONT_ARCHIVES='true' ;;
-            a) readonly INCLUDE_INSTALLED_FONTS='true' ;;
-            g) readonly OPERATE_GLOBALLY='true' ;;
-            l) readonly DISPLAY_INSTALLED_FONTS='true' ;;
-            L) readonly DISPLAY_ALL_FONTS='true' ;;
-            f) readonly INSTALL_WITH_FZF='true' ;;
-            i) readonly FONTNAMES="$OPTARG" ;;
+            k) KEEP_FONT_ARCHIVES='true' ;;
+            a) INCLUDE_INSTALLED_FONTS='true' ;;
+            g) OPERATE_GLOBALLY='true' ;;
+            l) display_installed_fonts='true' ;;
+            L) display_all_fonts='true' ;;
+            f) install_with_fzf='true' ;;
+            i) install_font_names="$OPTARG" ;;
             u)
-                readonly UNINSTALL_FONTS='true'
-                UNINSTALL_FONTNAMES="$OPTARG"
+                uninstall_fonts='true'
+                uninstall_font_names="$OPTARG"
                 ;;
-            U) readonly UPDATE_INSTALLED_FONTS='true' ;;
+            U) update_installed_fonts='true' ;;
             V) display_getnf_version && exit 0 ;;
             :) error "Option '-$OPTARG' requires at least one font name." ;;
             *) error "Unknown option: -$OPTARG" ;;
@@ -849,9 +859,9 @@ main() {
     done
     shift $((OPTIND - 1))
 
-    if [[ "$UNINSTALL_FONTS" == "true" ]]; then
+    if [[ "$uninstall_fonts" == "true" ]]; then
         (($# == 0)) || error "Unexpected argument: $1. Quote multiple font names."
-        uninstall_fonts "$UNINSTALL_FONTNAMES"
+        uninstall_fonts "$uninstall_font_names"
         exit $?
     fi
 
@@ -859,7 +869,7 @@ main() {
     get_latest_release_version
     get_all_fonts
 
-    if [[ "$DISPLAY_INSTALLED_FONTS" == "true" ]]; then
+    if [[ "$display_installed_fonts" == "true" ]]; then
         get_installed_fonts
         if ! display_installed_fonts; then
             if [[ "$OPERATE_GLOBALLY" == "true" ]]; then
@@ -871,26 +881,26 @@ main() {
         exit 0
     fi
 
-    if [[ "$DISPLAY_ALL_FONTS" == "true" ]]; then
+    if [[ "$display_all_fonts" == "true" ]]; then
         display_all_fonts
         exit 0
     fi
 
     SELECTED_FONTS=()
-    if [[ "$UPDATE_INSTALLED_FONTS" == "true" ]]; then
+    if [[ "$update_installed_fonts" == "true" ]]; then
         update_installed_fonts
-    elif [[ "$INSTALL_WITH_FZF" == "true" ]]; then
+    elif [[ "$install_with_fzf" == "true" ]]; then
         fzf_install
-    elif [[ -n "$FONTNAMES" ]]; then
-        direct_install "$FONTNAMES"
+    elif [[ -n "$install_font_names" ]]; then
+        direct_install "$install_font_names"
     else
         menu_install
     fi
 
     if ((${#SELECTED_FONTS[@]} > 0)); then
         title "Selected Nerd Fonts: ${SELECTED_FONTS[*]}"
-        for i in "${SELECTED_FONTS[@]}"; do
-            install_font "$i"
+        for font in "${SELECTED_FONTS[@]}"; do
+            install_font "$font"
         done
         post_install
     else
