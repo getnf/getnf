@@ -560,9 +560,8 @@ uninstall_fonts() {
             [[ "$font" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.+-]*$ ]] ||
                 error "Invalid font name: $font."
             marker=$(get_font_release_file "$font")
-            [[ -d "$FONT_DIR/$font" && ! -L "$FONT_DIR/$font" &&
-                -f "$marker" && ! -L "$marker" ]] ||
-                error "Font $font is not managed by getnf in this mode."
+            [[ -d "$FONT_DIR/$font" ]] || error "Font $font not found."
+            [[ -f "$marker" ]] || error "Font $font is not managed by getnf."
             fonts_to_uninstall+=("$font")
         done
 
