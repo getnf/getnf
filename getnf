@@ -34,6 +34,8 @@ OPERATE_GLOBALLY='false'
 KEEP_FONT_ARCHIVES='false'
 INCLUDE_INSTALLED_FONTS='false'
 UPDATE_INSTALLED_FONTS='false'
+UNINSTALL_FONTS='false'
+UNINSTALL_FONTNAMES=''
 DISPLAY_INSTALLED_FONTS='false'
 DISPLAY_ALL_FONTS='false'
 INSTALL_WITH_FZF='false'
@@ -548,26 +550,43 @@ direct_install() {
 #######################################
 uninstall_fonts() {
     get_font_dir
-    local -a fonts_to_uninstall
-    for font_name in $(echo "$1" | tr ',' ' '); do
-        if [[ -d "$FONT_DIR/$font_name" ]]; then
-            fonts_to_uninstall+=("$font_name")
-        else
-            error "Font $font_name is not installed."
-        fi
-    done
-    if [[ ${#fonts_to_uninstall[@]} -ne 0 ]]; then
-        for font in "${fonts_to_uninstall[@]}"; do
-            echo -n "Uninstalling $font... "
-            if [[ "$OPERATE_GLOBALLY" == "true" ]]; then
-                sudo rm -rf "${FONT_DIR:?}/$font"
-            else
-                rm -rf "${FONT_DIR:?}/$font"
-            fi
-            rm -f "$(get_font_release_file "$font")"
-            confirm "Done"
+    local -a fonts_to_uninstall=() names=()
+    local remaining="$1" segment font marker
+    while true; do
+        segment=${remaining%%,*}
+        # reject multiline input
+        [[ "$segment" != *$'\n'* && "$segment" != *$'\r'* ]] ||
+            error "Invalid font selection."
+        IFS=$' \t' read -r -a names <<< "$segment"
+        # reject empty input and empty comma fields, such as "Hack,,Other"
+        ((${#names[@]} > 0)) || error "Empty font name."
+
+        for font in "${names[@]}"; do
+            [[ "$font" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.+-]*$ ]] ||
+                error "Invalid font name: $font."
+            marker=$(get_font_release_file "$font")
+            [[ -d "$FONT_DIR/$font" && ! -L "$FONT_DIR/$font" &&
+                -f "$marker" && ! -L "$marker" ]] ||
+                error "Font $font is not managed by getnf in this mode."
+            fonts_to_uninstall+=("$font")
         done
-    fi
+
+        [[ "$remaining" == *,* ]] || break
+        remaining=${remaining#*,}
+    done
+    for font in "${fonts_to_uninstall[@]}"; do
+        printf 'Uninstalling %s... ' "$font"
+        if [[ "$OPERATE_GLOBALLY" == "true" ]]; then
+            sudo rm -rf -- "${FONT_DIR:?}/$font" ||
+                error "Failed to uninstall font $font."
+        else
+            rm -rf -- "${FONT_DIR:?}/$font" ||
+                error "Failed to uninstall font $font."
+        fi
+        rm -f -- "$(get_font_release_file "$font")" ||
+            error "Font $font removed; failed to clear its saved information."
+        confirm "Done"
+    done
 }
 
 #######################################
@@ -818,14 +837,23 @@ main() {
             L) readonly DISPLAY_ALL_FONTS='true' ;;
             f) readonly INSTALL_WITH_FZF='true' ;;
             i) readonly FONTNAMES="$OPTARG" ;;
-            u) uninstall_fonts "$OPTARG" && exit 0 ;;
+            u)
+                readonly UNINSTALL_FONTS='true'
+                UNINSTALL_FONTNAMES="$OPTARG"
+                ;;
             U) readonly UPDATE_INSTALLED_FONTS='true' ;;
             V) display_getnf_version && exit 0 ;;
             :) error "Option '-$OPTARG' requires at least one font name." ;;
-            *) display_help && exit 0 ;;
+            *) error "Unknown option: -$OPTARG" ;;
         esac
     done
     shift $((OPTIND - 1))
+
+    if [[ "$UNINSTALL_FONTS" == "true" ]]; then
+        (($# == 0)) || error "Unexpected argument: $1. Quote multiple font names."
+        uninstall_fonts "$UNINSTALL_FONTNAMES"
+        exit $?
+    fi
 
     check_dependencies
     get_latest_release_version
