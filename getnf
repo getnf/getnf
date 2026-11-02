@@ -6,13 +6,6 @@
 # Maintainer: @trimclain
 # License: GPL-3.0
 
-# shellcheck disable=SC2155,SC2164
-# Disabled:
-# "Declare and assign separately to avoid masking return values":
-#  https://www.shellcheck.net/wiki/SC2155
-# "Use 'pushd ... || exit' or 'pushd ... || exit' in case pushd fails":
-#  https://www.shellcheck.net/wiki/SC2164
-
 readonly VERSION="0.5.0-dev"
 
 readonly NERDFONTSAPI='https://api.github.com/repos/ryanoasis/nerd-fonts'
@@ -295,10 +288,12 @@ check_dependencies() {
 #   None
 #######################################
 get_latest_release_version() {
+    # shellcheck disable=SC2155
     readonly RELEASE=$(curl --silent "$NERDFONTSAPI/releases/latest" |
         awk -v RS=',' -F'"' '/tag_name/ {print $4}')
     if [[ -f "$RELEASE_FILE" ]]; then
-        local current_release=$(cat "$RELEASE_FILE")
+        local current_release
+        current_release=$(cat "$RELEASE_FILE")
         if [[ "$current_release" != "$RELEASE" ]]; then
             readonly NEW_RELEASE_AVAILABLE='true'
         fi
@@ -334,9 +329,11 @@ get_font_release_file() {
 #   0 if font is of the latest version, 1 otherwise
 #######################################
 is_latest_version() {
-    local font_release_file="$(get_font_release_file "$1")"
+    local font_release_file
+    font_release_file="$(get_font_release_file "$1")"
     if [[ -f "$font_release_file" ]]; then
-        local font_release_version=$(cat "$font_release_file")
+        local font_release_version
+        font_release_version=$(cat "$font_release_file")
         if [[ "$font_release_version" == "$RELEASE" ]]; then
             return 0
         fi
@@ -496,13 +493,13 @@ save_font_release() {
 #   Font name
 #######################################
 install_font() {
-    pushd "$DOWN_DIR" > /dev/null
+    pushd "$DOWN_DIR" > /dev/null || return 1
     # Remove the archive if it exists due to curl not having overwrite option
     rm -f "$DOWN_DIR/$1.tar.xz"
     download_font "$1" &&
         extract_font "$1" &&
         save_font_release "$1"
-    popd > /dev/null
+    popd > /dev/null || return 1
 }
 
 #######################################
@@ -659,9 +656,11 @@ display_installed_fonts() {
         title "Installed Nerd Fonts:"
     fi
     for font in "${INSTALLED_FONTS[@]}"; do
-        local font_release_file="$(get_font_release_file "$font")"
+        local font_release_file
+        font_release_file="$(get_font_release_file "$font")"
         if [[ -f "$font_release_file" ]]; then
-            local font_release_version=$(cat "$font_release_file")
+            local font_release_version
+            font_release_version=$(cat "$font_release_file")
             printf '%s - %s\n' "$font" "$font_release_version"
         else
             printf '%s - unknown version\n' "$font"
@@ -703,7 +702,8 @@ display_all_fonts() {
 #######################################
 display_font_menu() {
     local font_index
-    local term_width=$(stty size | cut -d ' ' -f 2)
+    local term_width
+    term_width=$(stty size | cut -d ' ' -f 2)
     title "Nerd Fonts ${RELEASE}:"
     (
         for font_index in "${!FONT_OPTIONS[@]}"; do
@@ -806,7 +806,8 @@ fzf_install() {
 
     get_installed_fonts
     filter_installed_fonts
-    local fzf_header=$(printf \
+    local fzf_header
+    fzf_header=$(printf \
         '%sNerd Fonts %s%s\n%s%sTAB selects • ENTER installs • ESC cancels%s' \
         "$OLIVE" "$RELEASE" "$RESET" "$ITALIC" "$CYAN" "$RESET")
     local fzf_flags=(
@@ -815,7 +816,8 @@ fzf_install() {
         --header="$fzf_header" --header-first
         --color 'pointer:green,marker:green'
     )
-    local selected_fonts=$(printf '%s\n' "${FONT_OPTIONS[@]}" | fzf "${fzf_flags[@]}")
+    local selected_fonts
+    selected_fonts=$(printf '%s\n' "${FONT_OPTIONS[@]}" | fzf "${fzf_flags[@]}")
     for font_name in $selected_fonts; do
         SELECTED_FONTS+=("$font_name")
     done
