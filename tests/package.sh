@@ -2,6 +2,23 @@
 # Runs inside the installed-package test container; EXPECTED_TAG comes from Make.
 set -euo pipefail
 
+expected_version=${EXPECTED_TAG#v}
+if command -v dpkg-query > /dev/null; then
+    metadata=$(dpkg-query -W -f='${Version} ${Architecture}' getnf)
+    expected_metadata="$expected_version all"
+elif command -v rpm > /dev/null; then
+    metadata=$(rpm -q --qf '%{VERSION}-%{RELEASE} %{ARCH}' getnf)
+    expected_metadata="$expected_version-1 noarch"
+else
+    echo 'No supported package manager found for metadata checks' >&2
+    exit 1
+fi
+if [[ "$metadata" != "$expected_metadata" ]]; then
+    printf 'Package metadata mismatch: expected <%s>, got <%s>\n' \
+        "$expected_metadata" "$metadata" >&2
+    exit 1
+fi
+
 command -v getnf
 test -x /usr/bin/getnf
 actual="$(getnf -V)"
