@@ -16,7 +16,7 @@ jobs:
           sudo apt-get install -y shellcheck
 
       - name: Lint
-        run: shellcheck getnf
+        run: shellcheck getnf tests/*.sh
 
   shfmt:
     name: Shfmt
@@ -31,7 +31,7 @@ jobs:
           sudo apt-get install -y shfmt
 
       - name: Style Check
-        run: shfmt -d getnf
+        run: shfmt -d getnf tests/*.sh
 
   prettier:
     name: Prettier
