@@ -108,6 +108,13 @@ error() {
     exit 1
 }
 
+usage_error() {
+    alert "$1" >&2
+    printf '\n' >&2
+    display_help >&2
+    exit 1
+}
+
 ensure_installed() {
     if ! command -v "$1" > /dev/null; then
         error "Dependency $1 is not installed on your system."
@@ -854,14 +861,14 @@ main() {
                 ;;
             U) update_installed_fonts='true' ;;
             V) display_getnf_version && exit 0 ;;
-            :) error "Option '-$OPTARG' requires at least one font name." ;;
-            *) error "Unknown option: -$OPTARG" ;;
+            :) usage_error "Option '-$OPTARG' requires at least one font name." ;;
+            *) usage_error "Unknown option: -$OPTARG" ;;
         esac
     done
     shift $((OPTIND - 1))
 
     if [[ "$uninstall_fonts" == "true" ]]; then
-        (($# == 0)) || error "Unexpected argument: $1. Quote multiple font names."
+        (($# == 0)) || usage_error "Unexpected argument: $1. Quote multiple font names."
         uninstall_fonts "$uninstall_font_names"
         exit $?
     fi
