@@ -13,7 +13,7 @@ Welcome to the GetNF contributing guide.
 
 Run these commands from the repository root:
 
-- `make test` runs uninstall safety, installer, and live font installation/removal tests in a temporary HOME and working directory, which are cleaned up afterward. Requires internet access for font downloads; your installed fonts and getnf configuration are left untouched.
+- `make test` runs offline regression, installer, and live font installation/removal tests in a temporary HOME and working directory, which are cleaned up afterward. Requires internet access for font downloads; your installed fonts and getnf configuration are left untouched.
 - `make ci-test` builds DEB/RPM packages and Ubuntu/Fedora test images, then checks the installed packages inside disposable containers. Requires Docker, [nFPM](https://nfpm.goreleaser.com/), and internet access. Build artifacts are written to `dist/`.
 - `make test-all` runs both suites and requires all dependencies above.
 
