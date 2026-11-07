@@ -226,17 +226,32 @@ get_font_dir() {
 #   None
 #######################################
 init_down_dir() {
+    local down_dir
     if [[ "$KEEP_FONT_ARCHIVES" == "true" ]]; then
         if command -v xdg-user-dir > /dev/null; then
-            DOWN_DIR="$(xdg-user-dir DOWNLOAD)/getnf"
+            down_dir=$(xdg-user-dir DOWNLOAD) || {
+                alert "Could not determine the download directory." >&2
+                return 1
+            }
+            [[ -n "$down_dir" ]] || {
+                alert "The download directory is empty." >&2
+                return 1
+            }
+            down_dir="$down_dir/getnf"
         else
-            DOWN_DIR="$HOME/Downloads/getnf"
+            down_dir="$HOME/Downloads/getnf"
         fi
-        mkdir -p "$DOWN_DIR"
+        mkdir -p "$down_dir" || {
+            alert "Could not create download directory: $down_dir" >&2
+            return 1
+        }
     else
-        DOWN_DIR=$(mktemp -d "${TMPDIR:-/tmp}/getnf.XXXXXX")
+        down_dir=$(mktemp -d "${TMPDIR:-/tmp}/getnf.XXXXXX") || {
+            alert "Could not create temporary download directory in ${TMPDIR:-/tmp}." >&2
+            return 1
+        }
     fi
-    readonly DOWN_DIR
+    readonly DOWN_DIR="$down_dir"
 }
 
 #######################################
@@ -249,14 +264,23 @@ init_down_dir() {
 #   None
 #######################################
 create_dirs() {
-    init_down_dir
+    init_down_dir || return 1
     get_font_dir
     if [[ "$OPERATE_GLOBALLY" == "true" ]]; then
-        sudo mkdir -p "$FONT_DIR"
+        sudo mkdir -p "$FONT_DIR" || {
+            alert "Could not create global font directory: $FONT_DIR" >&2
+            return 1
+        }
     else
-        mkdir -p "$FONT_DIR"
+        mkdir -p "$FONT_DIR" || {
+            alert "Could not create font directory: $FONT_DIR" >&2
+            return 1
+        }
     fi
-    mkdir -p "$FONT_RELEASES_DIR"
+    mkdir -p "$FONT_RELEASES_DIR" || {
+        alert "Could not create font state directory: $FONT_RELEASES_DIR" >&2
+        return 1
+    }
 }
 
 _probe_204() {
@@ -280,7 +304,7 @@ verify_internet_access() {
 check_dependencies() {
     ensure_installed curl
     verify_internet_access
-    create_dirs
+    create_dirs || return 1
 }
 
 #######################################
@@ -880,7 +904,7 @@ main() {
         exit $?
     fi
 
-    check_dependencies
+    check_dependencies || return 1
     get_latest_release_version
     get_all_fonts
 
