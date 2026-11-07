@@ -34,6 +34,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+      - name: Argument handling checks
+        shell: bash
+        run: bash tests/arguments.sh
       - name: Uninstall safety checks
         shell: bash
         run: bash tests/uninstall-safety.sh
