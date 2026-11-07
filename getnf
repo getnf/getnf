@@ -474,11 +474,11 @@ download_font() {
 extract_font() {
     echo -n "Installing $1... "
     if [[ "$OPERATE_GLOBALLY" == "true" ]]; then
-        sudo mkdir -p "$FONT_DIR/$1"
-        sudo tar -xf "$1.tar.xz" -C "$FONT_DIR/$1"
+        sudo mkdir -p "$FONT_DIR/$1" || return $?
+        sudo tar -xf "$1.tar.xz" -C "$FONT_DIR/$1" || return $?
     else
-        mkdir -p "$FONT_DIR/$1"
-        tar -xf "$1.tar.xz" -C "$FONT_DIR/$1"
+        mkdir -p "$FONT_DIR/$1" || return $?
+        tar -xf "$1.tar.xz" -C "$FONT_DIR/$1" || return $?
     fi
     confirm "Done"
 }
