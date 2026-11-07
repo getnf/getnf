@@ -40,6 +40,9 @@ jobs:
       - name: Download failure checks
         shell: bash
         run: bash tests/download.sh
+      - name: Extraction failure checks
+        shell: bash
+        run: bash tests/extraction.sh
       - name: Uninstall safety checks
         shell: bash
         run: bash tests/uninstall-safety.sh
