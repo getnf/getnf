@@ -442,19 +442,21 @@ filter_installed_fonts() {
 #   Font name
 #######################################
 download_font() {
-    local opts=("--location" "--remote-header-name" "--remote-name")
+    local status=0
+    local opts=("--fail" "--show-error" "--location" "--remote-header-name" "--remote-name")
     if [[ $ON_MAC == "false" ]]; then
         opts+=("--silent")
         echo -n "Downloading $1...  "
         start_loading_animation
-        curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
+        curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz" || status=$?
         stop_loading_animation
+        ((status == 0)) || return "$status"
         confirm "Done"
     else
         # TODO: figure out how to disable messages about bg process termination
         opts+=("--progress-bar")
         info "Downloading $1... "
-        curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz"
+        curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz" || return $?
         erase_line
         erase_line
         echo "Downloading $1... ${GREEN}Done${RESET}"
@@ -500,13 +502,15 @@ save_font_release() {
 #   Font name
 #######################################
 install_font() {
+    local status=0
     pushd "$DOWN_DIR" > /dev/null || return 1
     # Remove the archive if it exists due to curl not having overwrite option
-    rm -f "$DOWN_DIR/$1.tar.xz"
-    download_font "$1" &&
+    rm -f "$DOWN_DIR/$1.tar.xz" &&
+        download_font "$1" &&
         extract_font "$1" &&
-        save_font_release "$1"
+        save_font_release "$1" || status=$?
     popd > /dev/null || return 1
+    return "$status"
 }
 
 #######################################
@@ -588,17 +592,19 @@ uninstall_fonts() {
 }
 
 #######################################
-# Show archive location (if enabled) and confirm completion
+# Show archive location (if enabled) and confirm complete success
 # Globals:
 #   KEEP_FONT_ARCHIVES
 # Arguments:
-#   None
+#   Whether all selected fonts installed successfully (default: true)
 #######################################
 post_install() {
     if [[ "$KEEP_FONT_ARCHIVES" == "true" ]]; then
         info "The downloaded font archives can be found in $DOWN_DIR"
     fi
-    confirm "Enjoy your new fonts!"
+    if [[ "${1:-true}" == "true" ]]; then
+        confirm "Enjoy your new fonts!"
+    fi
 }
 
 #######################################
@@ -839,6 +845,7 @@ main() {
     local install_with_fzf='false'
     local install_font_names=''
     local option font
+    local -a installed_fonts=() failed_fonts=()
 
     trap cleanup EXIT
     trap handle_interrupt INT
@@ -908,8 +915,17 @@ main() {
     if ((${#SELECTED_FONTS[@]} > 0)); then
         title "Selected Nerd Fonts: ${SELECTED_FONTS[*]}"
         for font in "${SELECTED_FONTS[@]}"; do
-            install_font "$font"
+            if install_font "$font"; then
+                installed_fonts+=("$font")
+            else
+                failed_fonts+=("$font")
+            fi
         done
+        if ((${#failed_fonts[@]} > 0)); then
+            printf '\nInstalled: %s\n' "${installed_fonts[*]:-none}"
+            post_install false
+            error "Failed to install: ${failed_fonts[*]}."
+        fi
         post_install
     else
         error "No fonts were selected, exiting."
