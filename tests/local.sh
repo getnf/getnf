@@ -15,12 +15,11 @@ mkdir -p "$HOME" "$fixture/work" "$fixture/tmp"
 export TMPDIR="$fixture/tmp"
 unset RUNNER_OS
 
-# The bootstrap installer uses getnf.tmp in its working directory. Run copies
-# so even that temporary file cannot collide with anything in the checkout.
+# Run checkout copies in the isolated working directory.
 cp "$repo_root/getnf" "$repo_root/install.sh" "$fixture/work/"
 cd -- "$fixture/work"
 
-for test_script in arguments.sh startup.sh download.sh extraction.sh uninstall-safety.sh installer.sh fonts-install.sh fonts-uninstall.sh; do
+for test_script in arguments.sh startup.sh download.sh extraction.sh uninstall-safety.sh installer-safety.sh installer.sh fonts-install.sh fonts-uninstall.sh; do
     printf '\nRunning %s\n' "$test_script"
     bash "$repo_root/tests/$test_script"
 done
