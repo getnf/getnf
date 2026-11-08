@@ -309,7 +309,7 @@ check_dependencies() {
 
 #######################################
 # Create the global RELEASE with the latest release version and
-# save it in the RELEASE_FILE. If there's a new release available,
+# defer saving until the catalog is ready. If there's a new release available,
 # set NEW_RELEASE_AVAILABLE to true.
 # Globals:
 #   NERDFONTSAPI
@@ -319,17 +319,27 @@ check_dependencies() {
 #   None
 #######################################
 get_latest_release_version() {
-    # shellcheck disable=SC2155
-    readonly RELEASE=$(curl --silent "$NERDFONTSAPI/releases/latest" |
-        awk -v RS=',' -F'"' '/tag_name/ {print $4}')
-    if [[ -f "$RELEASE_FILE" ]]; then
-        local current_release
-        current_release=$(cat "$RELEASE_FILE")
-        if [[ "$current_release" != "$RELEASE" ]]; then
-            readonly NEW_RELEASE_AVAILABLE='true'
-        fi
+    local response current_release
+    response=$(curl --fail --silent --show-error "$NERDFONTSAPI/releases/latest") || {
+        alert "Could not fetch latest release metadata." >&2
+        return 1
+    }
+    RELEASE=$(printf '%s\n' "$response" |
+        awk -v RS=',' -F'"' '/"tag_name"[[:space:]]*:/ {print $4}')
+    # These are parsed-value checks, not structural JSON validation.
+    if [[ ! "$RELEASE" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][A-Za-z0-9.-]+)?$ ]]; then
+        alert "Unusable release metadata." >&2
+        return 1
     fi
-    echo "$RELEASE" > "$RELEASE_FILE"
+    current_release=''
+    if [[ -f "$RELEASE_FILE" ]]; then
+        current_release=$(cat "$RELEASE_FILE") || return 1
+    fi
+    NEW_RELEASE_AVAILABLE='false'
+    if [[ "$current_release" != "$RELEASE" ]]; then
+        NEW_RELEASE_AVAILABLE='true'
+    fi
+    # Persist only after the catalog refresh succeeds (see get_all_fonts).
 }
 
 #######################################
@@ -380,10 +390,42 @@ is_latest_version() {
 #   None
 #######################################
 create_all_fonts_file() {
-    local font_list
-    font_list=$(curl -s "$NERDFONTSAPI/contents/patched-fonts?ref=master" |
-        awk -v RS=',' -F'"' '/name/ {print $4}')
-    echo "$font_list" > "$ALL_FONTS_FILE"
+    local response font_list
+    response=$(curl --fail --silent --show-error "$NERDFONTSAPI/contents/patched-fonts?ref=master") || {
+        alert "Could not fetch font catalog." >&2
+        return 1
+    }
+    font_list=$(printf '%s\n' "$response" |
+        awk -v RS=',' -F'"' '/"name"[[:space:]]*:/ {print $4}')
+    if ! valid_font_catalog "$font_list"; then
+        alert "Unusable font catalog." >&2
+        return 1
+    fi
+    replace_metadata_file "$ALL_FONTS_FILE" "$font_list"
+}
+
+# Check the extracted names only; the existing parser does not validate JSON.
+valid_font_catalog() {
+    local name
+    [[ -n "$1" ]] || return 1
+    while IFS= read -r name; do
+        [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9_-]*$ ]] || return 1
+    done <<< "$1"
+}
+
+# Stage beside the destination so a successful rename replaces it atomically.
+replace_metadata_file() {
+    local temporary
+    temporary=$(mktemp "$1.tmp.XXXXXX") && [[ -n "$temporary" ]] || {
+        alert "Could not stage metadata: $1" >&2
+        return 1
+    }
+    if [[ -d "$1" ]] || ! printf '%s\n' "$2" > "$temporary" ||
+        ! mv -f -- "$temporary" "$1"; then
+        rm -f -- "$temporary"
+        alert "Could not save metadata: $1" >&2
+        return 1
+    fi
 }
 
 #######################################
@@ -395,15 +437,24 @@ create_all_fonts_file() {
 #   None
 #######################################
 get_all_fonts() {
-    local line
-    if [[ ! -f "$ALL_FONTS_FILE" || "$NEW_RELEASE_AVAILABLE" == "true" ]]; then
-        create_all_fonts_file
+    local line catalog
+    catalog=''
+    if [[ -f "$ALL_FONTS_FILE" ]]; then
+        catalog=$(cat "$ALL_FONTS_FILE") || return 1
+    fi
+    if [[ "$NEW_RELEASE_AVAILABLE" == "true" ]] || ! valid_font_catalog "$catalog"; then
+        create_all_fonts_file || return 1
+        catalog=$(cat "$ALL_FONTS_FILE") || return 1
+        valid_font_catalog "$catalog" || return 1
+    fi
+    if [[ "$NEW_RELEASE_AVAILABLE" == "true" ]]; then
+        replace_metadata_file "$RELEASE_FILE" "$RELEASE" || return 1
     fi
     ALL_FONTS=()
     #mapfile -t ALL_FONTS < "$ALL_FONTS_FILE" # not available on mac
     while IFS= read -r line; do
         ALL_FONTS+=("$line")
-    done < "$ALL_FONTS_FILE"
+    done <<< "$catalog"
 }
 
 #######################################
@@ -905,8 +956,8 @@ main() {
     fi
 
     check_dependencies || return 1
-    get_latest_release_version
-    get_all_fonts
+    get_latest_release_version || return 1
+    get_all_fonts || return 1
 
     if [[ "$display_installed_fonts" == "true" ]]; then
         get_installed_fonts
