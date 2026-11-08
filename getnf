@@ -700,7 +700,6 @@ extract_font() {
         mkdir -p "$FONT_DIR/$1" || return $?
         tar -xf "$1.tar.xz" -C "$FONT_DIR/$1" || return $?
     fi
-    confirm "Done"
 }
 
 #######################################
@@ -710,16 +709,17 @@ extract_font() {
 # Arguments:
 #   Font name.
 # Outputs:
-#   Writes redirection errors to stderr.
+#   Writes staging and persistence errors to stderr.
 # Returns:
-#   0 on success, nonzero if writing the record fails.
+#   0 on success, nonzero if staging, writing, or replacement fails.
 #######################################
 save_font_release() {
-    echo "$RELEASE" > "$(get_font_release_file "$1")"
+    replace_metadata_file "$(get_font_release_file "$1")" "$RELEASE"
 }
 
 #######################################
 # Download, extract, and record a font from DOWN_DIR, then restore cwd.
+# Marker persistence failure does not roll back extracted font files.
 # Globals:
 #   DOWN_DIR
 # Arguments:
@@ -736,7 +736,8 @@ install_font() {
     rm -f "$DOWN_DIR/$1.tar.xz" &&
         download_font "$1" &&
         extract_font "$1" &&
-        save_font_release "$1" || status=$?
+        save_font_release "$1" &&
+        confirm "Done" || status=$?
     popd > /dev/null || return 1
     return "$status"
 }
