@@ -845,7 +845,7 @@ post_install() {
 
 #######################################
 # Select installed catalog fonts whose saved version is not current.
-# Exit with status 0 if all are current, or 1 if none are installed.
+# Exit with status 0 if all are current or no installed fonts are found.
 # Globals:
 #   INSTALLED_FONTS
 #   SELECTED_FONTS
@@ -853,7 +853,7 @@ post_install() {
 # Arguments:
 #   None
 # Outputs:
-#   Writes update status to stdout and missing-installation errors to stderr.
+#   Writes update status and empty-installation messages to stdout.
 #######################################
 update_installed_fonts() {
     local font
@@ -879,10 +879,11 @@ update_installed_fonts() {
         fi
     else
         if [[ "$OPERATE_GLOBALLY" == "true" ]]; then
-            error "No globally installed Nerd Fonts found."
+            info "No globally installed Nerd Fonts found."
         else
-            error "No installed Nerd Fonts found."
+            info "No installed Nerd Fonts found."
         fi
+        exit 0
     fi
 }
 
