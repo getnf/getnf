@@ -39,7 +39,7 @@ GREEN=''
 RESET=''
 ITALIC=''
 if command -v tput > /dev/null && [[ -t 1 ]]; then
-    # tput is part of the ncurses package
+    # Use terminal capabilities for colors rather than hard-coded escapes.
     # Colors: https://www.ditig.com/publications/256-colors-cheat-sheet
     OLIVE=$(tput setaf 3)
     CYAN=$(tput setaf 6)
@@ -53,6 +53,13 @@ readonly OLIVE CYAN RED GREEN RESET ITALIC
 readonly ANIMATION=('-' "\\" '|' '/')
 readonly FRAME_INTERVAL=0.25
 
+#######################################
+# Display command-line options and usage examples.
+# Arguments:
+#   None
+# Outputs:
+#   Writes help to stdout.
+#######################################
 display_help() {
     cat << EOF
 Usage:
@@ -103,11 +110,25 @@ alert() {
     printf '%s%b%s\n' "$RED" "$1" "$RESET"
 }
 
+#######################################
+# Print an error and exit the script with status 1.
+# Arguments:
+#   Error message.
+# Outputs:
+#   Writes the message to stderr.
+#######################################
 error() {
     alert "$1" >&2
     exit 1
 }
 
+#######################################
+# Print an argument error and help, then exit with status 1.
+# Arguments:
+#   Error message.
+# Outputs:
+#   Writes the error and help to stderr.
+#######################################
 usage_error() {
     alert "$1" >&2
     printf '\n' >&2
@@ -115,34 +136,42 @@ usage_error() {
     exit 1
 }
 
+#######################################
+# Exit with status 1 if a required command is unavailable.
+# Arguments:
+#   Command name.
+# Outputs:
+#   Writes an error to stderr if the command is missing.
+#######################################
 ensure_installed() {
     if ! command -v "$1" > /dev/null; then
         error "Dependency $1 is not installed on your system."
     fi
 }
 
-###############################################################################
-# Animation Functions
-# Credit: https://github.com/Silejonu/bash_loading_animations
-#
-# Usage:
-# Run `stop_loading_animation` if the script is interrupted:
-#trap stop_loading_animation SIGINT
-# Show a loading animation for the command "foo"
-#start_loading_animation
-#foo &> /dev/null
-#stop_loading_animation
+# Loading animation adapted from:
+# https://github.com/Silejonu/bash_loading_animations
 
 erase_line() {
-    # Move up a line and erase
+    # Move up one line and erase it.
     printf '\033[1A\033[2K'
 }
 
 erase_char() {
-    # Move left one char and erase
+    # Move left one column and erase to the end of the line.
     printf '\033[1D\033[K'
 }
 
+#######################################
+# Draw animation frames until the background process is stopped.
+# Globals:
+#   ANIMATION
+#   FRAME_INTERVAL
+# Arguments:
+#   None
+# Outputs:
+#   Writes animation frames and erase sequences to stdout.
+#######################################
 play_loading_animation_loop() {
     while true; do
         local frame
@@ -153,15 +182,38 @@ play_loading_animation_loop() {
     done
 }
 
+#######################################
+# Start the background animation and record its process ID.
+# Globals:
+#   LOADING_ANIMATION_PID
+#   LOADING_ANIMATION_ACTIVE
+# Arguments:
+#   None
+# Outputs:
+#   Writes animation frames and erase sequences to stdout in the background.
+#   Hides the cursor when stdout is a terminal.
+#######################################
 start_loading_animation() {
     if command -v tput > /dev/null && [[ -t 1 ]]; then
-        tput civis # Hide the terminal cursor
+        tput civis # Hide the terminal cursor.
     fi
     play_loading_animation_loop &
     LOADING_ANIMATION_PID="${!}"
     LOADING_ANIMATION_ACTIVE='true'
 }
 
+#######################################
+# Stop an active animation and restore the terminal cursor.
+# Globals:
+#   LOADING_ANIMATION_PID
+#   LOADING_ANIMATION_ACTIVE
+# Arguments:
+#   None
+# Outputs:
+#   Writes erase and cursor-restoration sequences to stdout.
+# Returns:
+#   0 if no animation is active; otherwise the last command status.
+#######################################
 stop_loading_animation() {
     [[ "$LOADING_ANIMATION_ACTIVE" == "true" ]] || return 0
     erase_char
@@ -170,10 +222,9 @@ stop_loading_animation() {
     LOADING_ANIMATION_PID=''
     LOADING_ANIMATION_ACTIVE='false'
     if command -v tput > /dev/null && [[ -t 1 ]]; then
-        tput cnorm # Restore the terminal cursor
+        tput cnorm # Restore the terminal cursor.
     fi
 }
-###############################################################################
 
 handle_interrupt() {
     alert '\nInterrupted. Exiting.' >&2
@@ -190,6 +241,16 @@ handle_hangup() {
     exit 129
 }
 
+#######################################
+# Stop the animation and remove temporary downloads unless kept with -k.
+# Globals:
+#   DOWN_DIR
+#   KEEP_FONT_ARCHIVES
+#   LOADING_ANIMATION_PID
+#   LOADING_ANIMATION_ACTIVE
+# Arguments:
+#   None
+#######################################
 cleanup() {
     stop_loading_animation
     if [[ -n "$DOWN_DIR" && "$KEEP_FONT_ARCHIVES" == "false" ]]; then
@@ -198,10 +259,12 @@ cleanup() {
 }
 
 #######################################
-# Set the global FONT_DIR
+# Set FONT_DIR for the selected platform and installation scope.
 # Globals:
 #   ON_MAC
 #   OPERATE_GLOBALLY
+#   HOME
+#   FONT_DIR
 # Arguments:
 #   None
 #######################################
@@ -219,11 +282,18 @@ get_font_dir() {
 }
 
 #######################################
-# Set the global DOWN_DIR and create that directory
+# Create the download directory and set DOWN_DIR.
 # Globals:
 #   KEEP_FONT_ARCHIVES
+#   HOME
+#   TMPDIR
+#   DOWN_DIR
 # Arguments:
 #   None
+# Outputs:
+#   Writes errors to stderr.
+# Returns:
+#   0 on success, nonzero if the directory cannot be prepared.
 #######################################
 init_down_dir() {
     local down_dir
@@ -255,13 +325,18 @@ init_down_dir() {
 }
 
 #######################################
-# Create directories DOWN_DIR, FONT_DIR and FONT_RELEASES_DIR
+# Prepare download, font, and installation-record directories.
 # Globals:
 #   OPERATE_GLOBALLY
 #   FONT_DIR
+#   DOWN_DIR
 #   FONT_RELEASES_DIR
 # Arguments:
 #   None
+# Outputs:
+#   Writes errors to stderr; sudo may prompt for authentication.
+# Returns:
+#   0 on success, nonzero if directory preparation fails.
 #######################################
 create_dirs() {
     init_down_dir || return 1
@@ -283,6 +358,15 @@ create_dirs() {
     }
 }
 
+#######################################
+# Check whether a connectivity endpoint responds with HTTP 204.
+# Arguments:
+#   Endpoint URL.
+#   Connection timeout in seconds.
+#   Overall timeout in seconds.
+# Returns:
+#   0 for HTTP 204, 1 otherwise.
+#######################################
 _probe_204() {
     local url="$1"
     local connect_timeout="$2"
@@ -295,12 +379,31 @@ _probe_204() {
         "$url" 2> /dev/null || true)" == "204" ]]
 }
 
+#######################################
+# Try connectivity probes; exit with status 1 if neither succeeds.
+# Arguments:
+#   None
+# Outputs:
+#   Writes an error to stderr if both probes fail.
+#######################################
 verify_internet_access() {
     _probe_204 "http://connectivitycheck.gstatic.com/generate_204" 1 2 ||
         _probe_204 "https://cp.cloudflare.com/generate_204" 2 3 ||
         error "Internet connection is required for getnf to work."
 }
 
+#######################################
+# Check curl and connectivity, then prepare runtime directories.
+# Globals:
+#   DOWN_DIR
+#   FONT_DIR
+# Arguments:
+#   None
+# Outputs:
+#   Writes errors to stderr; sudo may prompt for authentication.
+# Returns:
+#   0 on success, nonzero on directory failure; exits on failed checks.
+#######################################
 check_dependencies() {
     ensure_installed curl
     verify_internet_access
@@ -308,15 +411,19 @@ check_dependencies() {
 }
 
 #######################################
-# Create the global RELEASE with the latest release version and
-# defer saving until the catalog is ready. If there's a new release available,
-# set NEW_RELEASE_AVAILABLE to true.
+# Fetch RELEASE and set NEW_RELEASE_AVAILABLE by comparing the cache.
+# Leave release-marker persistence to get_all_fonts after catalog refresh.
 # Globals:
 #   NERDFONTSAPI
 #   RELEASE_FILE
+#   RELEASE
 #   NEW_RELEASE_AVAILABLE
 # Arguments:
 #   None
+# Outputs:
+#   Writes request and validation errors to stderr.
+# Returns:
+#   0 on success, nonzero on request failure, unusable data, or read failure.
 #######################################
 get_latest_release_version() {
     local response current_release
@@ -343,14 +450,14 @@ get_latest_release_version() {
 }
 
 #######################################
-# Get the name of the file which saves the release version of the given font
+# Get the installation-record path for a font in the selected scope.
 # Globals:
 #   OPERATE_GLOBALLY
 #   FONT_RELEASES_DIR
 # Arguments:
-#   Font name
+#   Font name.
 # Outputs:
-#   Writes the name of the file to stdout
+#   Writes the record path to stdout.
 #######################################
 get_font_release_file() {
     if [[ "$OPERATE_GLOBALLY" == "true" ]]; then
@@ -361,13 +468,13 @@ get_font_release_file() {
 }
 
 #######################################
-# Check if the font version is saved and is the latest
+# Check whether a font has a saved version matching RELEASE.
 # Globals:
 #   RELEASE
 # Arguments:
-#   Font name
+#   Font name.
 # Returns:
-#   0 if font is of the latest version, 1 otherwise
+#   0 if the saved version matches, 1 otherwise.
 #######################################
 is_latest_version() {
     local font_release_file
@@ -383,11 +490,16 @@ is_latest_version() {
 }
 
 #######################################
-# Save the font list from the Nerd Fonts master branch to a local file.
+# Fetch the master-branch catalog and replace its cache after value checks.
 # Globals:
 #   NERDFONTSAPI
+#   ALL_FONTS_FILE
 # Arguments:
 #   None
+# Outputs:
+#   Writes request, validation, and persistence errors to stderr.
+# Returns:
+#   0 on success, nonzero on request, validation, or persistence failure.
 #######################################
 create_all_fonts_file() {
     local response font_list
@@ -404,7 +516,14 @@ create_all_fonts_file() {
     replace_metadata_file "$ALL_FONTS_FILE" "$font_list"
 }
 
-# Check the extracted names only; the existing parser does not validate JSON.
+#######################################
+# Check that extracted catalog names are nonempty and use safe characters.
+# This validates parsed values, not JSON structure.
+# Arguments:
+#   Newline-separated font names.
+# Returns:
+#   0 if every name is usable, 1 otherwise.
+#######################################
 valid_font_catalog() {
     local name
     [[ -n "$1" ]] || return 1
@@ -413,7 +532,17 @@ valid_font_catalog() {
     done <<< "$1"
 }
 
-# Stage beside the destination so a successful rename replaces it atomically.
+#######################################
+# Write metadata through a unique sibling file and checked rename.
+# Staging beside the destination keeps replacement on the same filesystem.
+# Arguments:
+#   Destination file path.
+#   Text to save; a final newline is appended.
+# Outputs:
+#   Writes staging and persistence errors to stderr.
+# Returns:
+#   0 on success, nonzero if staging, writing, or replacement fails.
+#######################################
 replace_metadata_file() {
     local temporary
     temporary=$(mktemp "$1.tmp.XXXXXX") && [[ -n "$temporary" ]] || {
@@ -429,12 +558,20 @@ replace_metadata_file() {
 }
 
 #######################################
-# Create the global array ALL_FONTS with all fonts from the Nerd Fonts repo
+# Load ALL_FONTS, refreshing a missing or unusable catalog when needed.
+# Save a changed release marker only after the catalog is ready.
 # Globals:
 #   ALL_FONTS_FILE
 #   NEW_RELEASE_AVAILABLE
+#   RELEASE_FILE
+#   RELEASE
+#   ALL_FONTS
 # Arguments:
 #   None
+# Outputs:
+#   Writes refresh and persistence errors to stderr.
+# Returns:
+#   0 on success, nonzero if reading, refresh, or persistence fails.
 #######################################
 get_all_fonts() {
     local line catalog
@@ -451,27 +588,26 @@ get_all_fonts() {
         replace_metadata_file "$RELEASE_FILE" "$RELEASE" || return 1
     fi
     ALL_FONTS=()
-    #mapfile -t ALL_FONTS < "$ALL_FONTS_FILE" # not available on mac
+    # Use read instead of mapfile for macOS Bash 3.2 compatibility.
+    # mapfile -t ALL_FONTS < "$ALL_FONTS_FILE" # not available on mac
     while IFS= read -r line; do
         ALL_FONTS+=("$line")
     done <<< "$catalog"
 }
 
 #######################################
-# Create the global array INSTALLED_FONTS
+# Set INSTALLED_FONTS to catalog names found in FONT_DIR.
 # Globals:
 #   FONT_DIR
 #   ALL_FONTS
+#   INSTALLED_FONTS
 # Arguments:
 #   None
 #######################################
 get_installed_fonts() {
     local font
-    # list all fonts in FONT_DIR
     local installed_user_fonts=("$FONT_DIR"/*)
-    # leave only the basenames
     installed_user_fonts=("${installed_user_fonts[@]##*/}")
-    # filter Nerd Fonts
     INSTALLED_FONTS=()
     for font in "${ALL_FONTS[@]}"; do
         if [[ " ${installed_user_fonts[*]} " == *" $font "* ]]; then
@@ -481,13 +617,12 @@ get_installed_fonts() {
 }
 
 #######################################
-# Create the global array FONT_OPTIONS from ALL_FONTS.
-# Hide installed fonts at the current release unless
-# INCLUDE_INSTALLED_FONTS is enabled.
+# Build FONT_OPTIONS, hiding current installations unless -a is enabled.
 # Globals:
 #   INCLUDE_INSTALLED_FONTS
 #   ALL_FONTS
 #   INSTALLED_FONTS
+#   FONT_OPTIONS
 # Arguments:
 #   None
 #######################################
@@ -496,8 +631,7 @@ filter_installed_fonts() {
     if [[ "$INCLUDE_INSTALLED_FONTS" == "false" ]]; then
         FONT_OPTIONS=()
         for font in "${ALL_FONTS[@]}"; do
-            # add the font even if it's installed but the font_release_file
-            # doesn't exists or the version is not the latest
+            # Keep installed fonts selectable when their version is not current.
             if [[ " ${INSTALLED_FONTS[*]} " != *" $font "* ]] ||
                 ! is_latest_version "$font"; then
                 FONT_OPTIONS+=("$font")
@@ -509,12 +643,19 @@ filter_installed_fonts() {
 }
 
 #######################################
-# Download the font archive
+# Download a font archive into the current working directory.
 # Globals:
 #   NERDFONTSREPO
 #   RELEASE
+#   ON_MAC
+#   GREEN
+#   RESET
 # Arguments:
-#   Font name
+#   Font name.
+# Outputs:
+#   Writes download status to stdout and curl progress/errors to stderr.
+# Returns:
+#   0 on success, nonzero if curl fails.
 #######################################
 download_font() {
     local status=0
@@ -539,12 +680,16 @@ download_font() {
 }
 
 #######################################
-# Extract the font archive to the selected fonts directory
+# Extract a font archive into its family directory.
 # Globals:
 #   OPERATE_GLOBALLY
 #   FONT_DIR
 # Arguments:
-#   Font name
+#   Font name.
+# Outputs:
+#   Writes installation progress to stdout and command errors to stderr.
+# Returns:
+#   0 on success, nonzero if directory creation or extraction fails.
 #######################################
 extract_font() {
     echo -n "Installing $1... "
@@ -559,27 +704,35 @@ extract_font() {
 }
 
 #######################################
-# Save the release version of the given font
+# Save RELEASE in the font installation record.
 # Globals:
 #   RELEASE
 # Arguments:
-#   Font name
+#   Font name.
+# Outputs:
+#   Writes redirection errors to stderr.
+# Returns:
+#   0 on success, nonzero if writing the record fails.
 #######################################
 save_font_release() {
     echo "$RELEASE" > "$(get_font_release_file "$1")"
 }
 
 #######################################
-# Install the selected font
+# Download, extract, and record a font from DOWN_DIR, then restore cwd.
 # Globals:
 #   DOWN_DIR
 # Arguments:
-#   Font name
+#   Font name.
+# Outputs:
+#   Writes installation progress to stdout and errors to stderr.
+# Returns:
+#   0 on success, nonzero if a directory change or installation step fails.
 #######################################
 install_font() {
     local status=0
     pushd "$DOWN_DIR" > /dev/null || return 1
-    # Remove the archive if it exists due to curl not having overwrite option
+    # Remove the existing archive so curl -OJ can retry the download.
     rm -f "$DOWN_DIR/$1.tar.xz" &&
         download_font "$1" &&
         extract_font "$1" &&
@@ -589,13 +742,15 @@ install_font() {
 }
 
 #######################################
-# Parse the string of font names and add them
-# to SELECTED_FONTS if all of them are valid
+# Append requested catalog names to SELECTED_FONTS in input order.
+# Exit with status 1 at the first invalid name.
 # Globals:
 #   ALL_FONTS
 #   SELECTED_FONTS
 # Arguments:
-#   String of font names
+#   Comma- or space-separated font names.
+# Outputs:
+#   Writes invalid-name errors to stderr.
 #######################################
 direct_install() {
     local font_name candidate found
@@ -619,12 +774,15 @@ direct_install() {
 }
 
 #######################################
-# Validate all requested fonts before uninstalling getnf-managed installations.
+# Validate every requested font before removing managed installations.
+# Exit with status 1 on invalid input or a removal failure.
 # Globals:
 #   FONT_DIR
 #   OPERATE_GLOBALLY
 # Arguments:
-#   String of font names
+#   Comma- or whitespace-separated font names.
+# Outputs:
+#   Writes removal progress to stdout and errors to stderr.
 #######################################
 uninstall_fonts() {
     get_font_dir
@@ -632,11 +790,11 @@ uninstall_fonts() {
     local remaining="$1" segment font marker
     while true; do
         segment=${remaining%%,*}
-        # reject multiline input
+        # Reject multiline input.
         [[ "$segment" != *$'\n'* && "$segment" != *$'\r'* ]] ||
             error "Invalid font selection."
         IFS=$' \t' read -r -a names <<< "$segment"
-        # reject empty input and empty comma fields, such as "Hack,,Other"
+        # Reject empty input and empty comma fields, such as "Hack,,Other".
         ((${#names[@]} > 0)) || error "Empty font name."
 
         for font in "${names[@]}"; do
@@ -667,11 +825,14 @@ uninstall_fonts() {
 }
 
 #######################################
-# Show archive location (if enabled) and confirm complete success
+# Show the archive location if kept and announce success when requested.
 # Globals:
 #   KEEP_FONT_ARCHIVES
+#   DOWN_DIR
 # Arguments:
-#   Whether all selected fonts installed successfully (default: true)
+#   Whether all selected fonts installed successfully (default: true).
+# Outputs:
+#   Writes archive location and success messages to stdout.
 #######################################
 post_install() {
     if [[ "$KEEP_FONT_ARCHIVES" == "true" ]]; then
@@ -683,14 +844,16 @@ post_install() {
 }
 
 #######################################
-# Add all installed Nerd Fonts that are not the latest version
-# to the SELECTED_FONTS array
+# Select installed catalog fonts whose saved version is not current.
+# Exit with status 0 if all are current, or 1 if none are installed.
 # Globals:
 #   INSTALLED_FONTS
 #   SELECTED_FONTS
 #   OPERATE_GLOBALLY
 # Arguments:
 #   None
+# Outputs:
+#   Writes update status to stdout and missing-installation errors to stderr.
 #######################################
 update_installed_fonts() {
     local font
@@ -724,14 +887,16 @@ update_installed_fonts() {
 }
 
 #######################################
-# Display installed fonts
+# Display installed fonts and their saved versions, or unknown version.
 # Globals:
 #   INSTALLED_FONTS
 #   OPERATE_GLOBALLY
 # Arguments:
 #   None
+# Outputs:
+#   Writes the installed-font list to stdout.
 # Returns:
-#   1 if no installed Nerd Fonts found, 0 otherwise
+#   1 if no installed fonts were found, otherwise the last command status.
 #######################################
 display_installed_fonts() {
     local font
@@ -757,23 +922,27 @@ display_installed_fonts() {
 }
 
 #######################################
-# Display getnf release version
+# Display the getnf version.
 # Globals:
 #   VERSION
 # Arguments:
 #   None
+# Outputs:
+#   Writes the getnf version to stdout.
 #######################################
 display_getnf_version() {
     echo "getnf v$VERSION"
 }
 
 #######################################
-# Display the list of all fonts
+# Display the cached font catalog with the selected release as its heading.
 # Globals:
 #   RELEASE
 #   ALL_FONTS_FILE
 # Arguments:
 #   None
+# Outputs:
+#   Writes the heading and catalog to stdout; read errors go to stderr.
 #######################################
 display_all_fonts() {
     title "Nerd Fonts ${RELEASE}:"
@@ -781,12 +950,14 @@ display_all_fonts() {
 }
 
 #######################################
-# Display the font menu
+# Display numbered font choices in three columns sized for the terminal.
 # Globals:
 #   RELEASE
 #   FONT_OPTIONS
 # Arguments:
 #   None
+# Outputs:
+#   Writes the menu to stdout.
 #######################################
 display_font_menu() {
     local font_index
@@ -802,15 +973,17 @@ display_font_menu() {
 }
 
 #######################################
-# Parse input range of format *-* (e.g. 1-3) and
-# add the selected fonts to SELECTED_FONTS array
+# Add fonts from an inclusive numeric range to SELECTED_FONTS.
+# Selections already added remain if a later index is out of bounds.
 # Globals:
 #   FONT_OPTIONS
 #   SELECTED_FONTS
 # Arguments:
-#   Numeric range, e.g. 1-3
+#   Numeric range, such as 1-3.
+# Outputs:
+#   Writes invalid-format and out-of-bounds messages to stdout.
 # Returns:
-#   1 if input format is invalid or if the option is out of range
+#   1 for invalid format or an out-of-bounds index, 0 otherwise.
 #######################################
 parse_range() {
     local font_number
@@ -834,12 +1007,18 @@ parse_range() {
 }
 
 #######################################
-# Get and parse user input and add the selected fonts to SELECTED_FONTS array
+# Read menu selections, retrying on invalid choices until input is accepted.
+# Exit with status 0 when the user chooses q.
 # Globals:
 #   FONT_OPTIONS
 #   SELECTED_FONTS
+#   ITALIC
+#   CYAN
+#   RESET
 # Arguments:
 #   None
+# Outputs:
+#   Writes prompts to stderr and selection messages to stdout.
 #######################################
 handle_user_input() {
     local choice
@@ -850,7 +1029,6 @@ handle_user_input() {
             if [[ $choice == "q" ]]; then
                 confirm "Goodbye!"
                 exit 0
-            # Choice is a range (e.g. 1-3)
             elif [[ $choice == *-* ]]; then
                 parse_range "$choice" || continue 2
             elif ((choice >= 1 && choice <= ${#FONT_OPTIONS[@]})); then
@@ -866,9 +1044,15 @@ handle_user_input() {
 }
 
 #######################################
-# Run the nerd font installation menu
+# Show installed fonts and the menu, then collect selections.
+# Globals:
+#   INSTALLED_FONTS
+#   FONT_OPTIONS
+#   SELECTED_FONTS
 # Arguments:
 #   None
+# Outputs:
+#   Writes lists and selection messages to stdout and prompts to stderr.
 #######################################
 menu_install() {
     get_installed_fonts
@@ -880,14 +1064,21 @@ menu_install() {
 }
 
 #######################################
-# Select fonts using fzf and add them to the SELECTED_FONTS array
+# Collect font selections with fzf and append them to SELECTED_FONTS.
 # Globals:
+#   INSTALLED_FONTS
 #   FONT_OPTIONS
 #   SELECTED_FONTS
+#   OLIVE
+#   RELEASE
+#   RESET
+#   ITALIC
+#   CYAN
 # Arguments:
 #   None
+# Outputs:
+#   Displays the fzf interface; writes missing-dependency errors to stderr.
 #######################################
-
 fzf_install() {
     local font_name
     ensure_installed fzf
@@ -911,6 +1102,24 @@ fzf_install() {
     done
 }
 
+#######################################
+# Parse options and dispatch listing, installation, updates, or removal.
+# Register cleanup and signal handlers before processing options.
+# Globals:
+#   KEEP_FONT_ARCHIVES
+#   INCLUDE_INSTALLED_FONTS
+#   OPERATE_GLOBALLY
+#   OPTARG
+#   OPTIND
+#   SELECTED_FONTS
+# Arguments:
+#   Command-line options and font selections.
+# Outputs:
+#   Writes status, listings, and menu validation messages to stdout.
+#   Other errors and input prompts go to stderr.
+# Returns:
+#   0 on success, nonzero on startup failure; dispatched paths may exit.
+#######################################
 main() {
     local update_installed_fonts='false'
     local uninstall_fonts='false'
