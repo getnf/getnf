@@ -19,7 +19,7 @@ unset RUNNER_OS
 cp "$repo_root/getnf" "$repo_root/install.sh" "$fixture/work/"
 cd -- "$fixture/work"
 
-for test_script in arguments.sh startup.sh download.sh extraction.sh uninstall-safety.sh installer-safety.sh installer.sh fonts-install.sh fonts-uninstall.sh; do
+for test_script in arguments.sh startup.sh metadata.sh download.sh extraction.sh uninstall-safety.sh installer-safety.sh installer.sh fonts-install.sh fonts-uninstall.sh; do
     printf '\nRunning %s\n' "$test_script"
     bash "$repo_root/tests/$test_script"
 done
