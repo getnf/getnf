@@ -37,6 +37,9 @@ jobs:
       - name: Argument handling checks
         shell: bash
         run: bash tests/arguments.sh
+      - name: Update exit-status checks
+        shell: bash
+        run: bash tests/update.sh
       - name: Download failure checks
         shell: bash
         run: bash tests/download.sh
