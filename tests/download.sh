@@ -20,8 +20,18 @@ for platform in Linux Darwin; do
             source <(sed '$d' "$script_dir/getnf")
             cd -- "$case_dir" || exit 1
             curl() {
-                printf called > "$case_dir/curl-called"
+                printf 'called\n' >> "$case_dir/curl-called"
                 [[ " $* " == *' --fail '* && " $* " == *' --show-error '* ]] || return 99
+                [[ " $* " == *' --connect-timeout 15 '* &&
+                    " $* " == *' --speed-limit 1 '* &&
+                    " $* " == *' --speed-time 120 '* &&
+                    " $* " == *' --retry 0 '* &&
+                    " $* " != *' --max-time '* ]] || return 99
+                if [[ "$platform" == Linux ]]; then
+                    [[ " $* " == *' --silent '* ]] || return 99
+                else
+                    [[ " $* " == *' --progress-bar '* ]] || return 99
+                fi
                 while [[ "$1" != --output ]]; do shift; done
                 printf partial > "$2"
                 return "$curl_status"
@@ -41,6 +51,10 @@ for platform in Linux Darwin; do
         if [[ ! -f "$case_dir/curl-called" ]]; then
             echo "FAIL: $platform/$curl_status did not reach mocked curl" >&2
             cat "$case_dir/output" >&2
+            exit 1
+        fi
+        if [[ $(wc -l < "$case_dir/curl-called") -ne 1 ]]; then
+            echo "FAIL: $platform/$curl_status retried curl" >&2
             exit 1
         fi
         if ((status != curl_status)); then
@@ -89,12 +103,20 @@ run_cli() (
         local url="${!#}" output
         while [[ "$1" != --output ]]; do shift; done
         output=$2
-        [[ "$url" != */Bad.tar.xz ]] || return 22
+        if [[ "$url" == */Bad.tar.xz ]]; then
+            printf partial > "$output"
+            [[ "$scenario" != timeout ]] || return 28
+            return 22
+        fi
         cp "$fixture/font.tar.xz" "$output"
     }
     sudo() {
         echo 'Unexpected sudo call in download test' >&2
         return 99
+    }
+    tar() {
+        touch "$case_dir/tar-called"
+        command tar "$@"
     }
     start_loading_animation() { :; }
     stop_loading_animation() { :; }
@@ -108,7 +130,7 @@ run_cli() (
 )
 
 for keep_archives in false true; do
-    for scenario in success fresh-failure update-failure mixed failed-first; do
+    for scenario in success fresh-failure update-failure timeout mixed failed-first; do
         case_dir="$fixture/$scenario-$keep_archives"
         records="$case_dir/data/getnf/releases"
         mkdir -p "$records"
@@ -118,7 +140,7 @@ for keep_archives in false true; do
                 installed=Good
                 expected_status=0
                 ;;
-            fresh-failure | update-failure)
+            fresh-failure | update-failure | timeout)
                 selection=Bad
                 installed=none
                 expected_status=1
@@ -159,6 +181,12 @@ for keep_archives in false true; do
             grep -Fxq "Installed: $installed" "$case_dir/stdout"
             grep -Fxq 'Failed to install: Bad.' "$case_dir/stderr"
             if grep -q 'Enjoy your new fonts!' "$case_dir/stdout"; then exit 1; fi
+        fi
+        if [[ "$scenario" == timeout ]]; then
+            test ! -e "$case_dir/tar-called"
+            if [[ "$keep_archives" == true ]]; then
+                test -z "$(find "$case_dir/downloads" -name '.getnf-download.*' -print)"
+            fi
         fi
         archive_notice="The downloaded font archives can be found in $case_dir/downloads"
         if [[ "$keep_archives" == true ]]; then
