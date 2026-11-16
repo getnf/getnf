@@ -15,10 +15,10 @@ for global in false true; do
             # shellcheck source=/dev/null
             source <(sed '$d' "$repo_root/getnf")
             FONT_DIR="$case_dir/fonts"
-            DOWN_DIR="$case_dir/downloads"
+            DOWNLOAD_DIR="$case_dir/downloads"
             OPERATE_GLOBALLY="$global"
             RELEASE=vTEST
-            command mkdir -p "$FONT_DIR" "$DOWN_DIR" "$FONT_RELEASES_DIR"
+            command mkdir -p "$FONT_DIR" "$DOWNLOAD_DIR" "$FONT_RELEASES_DIR"
             marker=$(get_font_release_file Hack)
             other="$FONT_RELEASES_DIR/Hack_release.global.txt"
             [[ "$global" != true ]] || other="$FONT_RELEASES_DIR/Hack_release.txt"

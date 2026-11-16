@@ -32,7 +32,7 @@ for platform in Linux Darwin; do
             start_loading_animation() { touch "$case_dir/animation-active"; }
             stop_loading_animation() { rm -f "$case_dir/animation-active"; }
             # shellcheck disable=SC2034
-            RELEASE=vTEST DOWN_DIR="$case_dir"
+            RELEASE=vTEST DOWNLOAD_DIR="$case_dir"
             download_font Hack
         ) > "$case_dir/output" 2>&1
         status=$?
@@ -77,10 +77,10 @@ run_cli() (
     export HOME="$case_dir/home" XDG_DATA_HOME="$case_dir/data"
     # shellcheck source=/dev/null
     source <(sed '$d' "$script_dir/getnf")
-    DOWN_DIR="$case_dir/downloads"
+    DOWNLOAD_DIR="$case_dir/downloads"
     FONT_DIR="$case_dir/fonts"
     RELEASE=vTEST
-    check_dependencies() { mkdir -p "$DOWN_DIR" "$FONT_DIR" "$FONT_RELEASES_DIR"; }
+    check_dependencies() { mkdir -p "$DOWNLOAD_DIR" "$FONT_DIR" "$FONT_RELEASES_DIR"; }
     get_latest_release_version() { :; }
     get_all_fonts() { ALL_FONTS=(Good Bad Later); }
     curl() {
@@ -192,9 +192,9 @@ done
     export HOME="$case_dir/home" XDG_DATA_HOME="$case_dir/data"
     # shellcheck source=/dev/null
     source <(sed '$d' "$script_dir/getnf")
-    DOWN_DIR="$case_dir/downloads"
-    mkdir -p "$DOWN_DIR" "$FONT_RELEASES_DIR"
-    printf 'old archive\n' > "$DOWN_DIR/Bad.tar.xz"
+    DOWNLOAD_DIR="$case_dir/downloads"
+    mkdir -p "$DOWNLOAD_DIR" "$FONT_RELEASES_DIR"
+    printf 'old archive\n' > "$DOWNLOAD_DIR/Bad.tar.xz"
     printf 'vOLD\n' > "$FONT_RELEASES_DIR/Bad_release.txt"
     rm() {
         touch "$case_dir/removal-called"
@@ -210,7 +210,7 @@ done
     test -e "$case_dir/removal-called"
     test ! -e "$case_dir/download-called"
     test ! -e "$case_dir/extract-called"
-    test "$(cat "$DOWN_DIR/Bad.tar.xz")" = 'old archive'
+    test "$(cat "$DOWNLOAD_DIR/Bad.tar.xz")" = 'old archive'
     test "$(cat "$FONT_RELEASES_DIR/Bad_release.txt")" = vOLD
 )
 printf 'Download tests passed\n'

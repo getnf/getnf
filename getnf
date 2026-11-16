@@ -27,7 +27,7 @@ OPERATE_GLOBALLY='false'
 KEEP_FONT_ARCHIVES='false'
 INCLUDE_INSTALLED_FONTS='false'
 
-DOWN_DIR=''
+DOWNLOAD_DIR=''
 FONT_DIR=''
 LOADING_ANIMATION_PID=''
 LOADING_ANIMATION_ACTIVE='false'
@@ -244,7 +244,7 @@ handle_hangup() {
 #######################################
 # Stop the animation and remove temporary downloads unless kept with -k.
 # Globals:
-#   DOWN_DIR
+#   DOWNLOAD_DIR
 #   KEEP_FONT_ARCHIVES
 #   LOADING_ANIMATION_PID
 #   LOADING_ANIMATION_ACTIVE
@@ -253,8 +253,8 @@ handle_hangup() {
 #######################################
 cleanup() {
     stop_loading_animation
-    if [[ -n "$DOWN_DIR" && "$KEEP_FONT_ARCHIVES" == "false" ]]; then
-        rm -rf -- "$DOWN_DIR"
+    if [[ -n "$DOWNLOAD_DIR" && "$KEEP_FONT_ARCHIVES" == "false" ]]; then
+        rm -rf -- "$DOWNLOAD_DIR"
     fi
 }
 
@@ -282,12 +282,12 @@ get_font_dir() {
 }
 
 #######################################
-# Create the download directory and set DOWN_DIR.
+# Create the download directory and set DOWNLOAD_DIR.
 # Globals:
 #   KEEP_FONT_ARCHIVES
 #   HOME
 #   TMPDIR
-#   DOWN_DIR
+#   DOWNLOAD_DIR
 # Arguments:
 #   None
 # Outputs:
@@ -295,33 +295,33 @@ get_font_dir() {
 # Returns:
 #   0 on success, nonzero if the directory cannot be prepared.
 #######################################
-init_down_dir() {
-    local down_dir
+init_download_dir() {
+    local download_dir
     if [[ "$KEEP_FONT_ARCHIVES" == "true" ]]; then
         if command -v xdg-user-dir > /dev/null; then
-            down_dir=$(xdg-user-dir DOWNLOAD) || {
+            download_dir=$(xdg-user-dir DOWNLOAD) || {
                 alert "Could not determine the download directory." >&2
                 return 1
             }
-            [[ -n "$down_dir" ]] || {
+            [[ -n "$download_dir" ]] || {
                 alert "The download directory is empty." >&2
                 return 1
             }
-            down_dir="$down_dir/getnf"
+            download_dir="$download_dir/getnf"
         else
-            down_dir="$HOME/Downloads/getnf"
+            download_dir="$HOME/Downloads/getnf"
         fi
-        mkdir -p "$down_dir" || {
-            alert "Could not create download directory: $down_dir" >&2
+        mkdir -p "$download_dir" || {
+            alert "Could not create download directory: $download_dir" >&2
             return 1
         }
     else
-        down_dir=$(mktemp -d "${TMPDIR:-/tmp}/getnf.XXXXXX") || {
+        download_dir=$(mktemp -d "${TMPDIR:-/tmp}/getnf.XXXXXX") || {
             alert "Could not create temporary download directory in ${TMPDIR:-/tmp}." >&2
             return 1
         }
     fi
-    readonly DOWN_DIR="$down_dir"
+    readonly DOWNLOAD_DIR="$download_dir"
 }
 
 #######################################
@@ -329,7 +329,7 @@ init_down_dir() {
 # Globals:
 #   OPERATE_GLOBALLY
 #   FONT_DIR
-#   DOWN_DIR
+#   DOWNLOAD_DIR
 #   FONT_RELEASES_DIR
 # Arguments:
 #   None
@@ -339,7 +339,7 @@ init_down_dir() {
 #   0 on success, nonzero if directory preparation fails.
 #######################################
 create_dirs() {
-    init_down_dir || return 1
+    init_download_dir || return 1
     get_font_dir
     if [[ "$OPERATE_GLOBALLY" == "true" ]]; then
         sudo mkdir -p "$FONT_DIR" || {
@@ -395,7 +395,7 @@ verify_internet_access() {
 #######################################
 # Check curl and connectivity, then prepare runtime directories.
 # Globals:
-#   DOWN_DIR
+#   DOWNLOAD_DIR
 #   FONT_DIR
 # Arguments:
 #   None
@@ -718,10 +718,10 @@ save_font_release() {
 }
 
 #######################################
-# Download, extract, and record a font from DOWN_DIR, then restore cwd.
+# Download, extract, and record a font from DOWNLOAD_DIR, then restore cwd.
 # Marker persistence failure does not roll back extracted font files.
 # Globals:
-#   DOWN_DIR
+#   DOWNLOAD_DIR
 # Arguments:
 #   Font name.
 # Outputs:
@@ -731,9 +731,9 @@ save_font_release() {
 #######################################
 install_font() {
     local status=0
-    pushd "$DOWN_DIR" > /dev/null || return 1
+    pushd "$DOWNLOAD_DIR" > /dev/null || return 1
     # Remove the existing archive so curl -OJ can retry the download.
-    rm -f "$DOWN_DIR/$1.tar.xz" &&
+    rm -f "$DOWNLOAD_DIR/$1.tar.xz" &&
         download_font "$1" &&
         extract_font "$1" &&
         save_font_release "$1" &&
@@ -829,7 +829,7 @@ uninstall_fonts() {
 # Show the archive location if kept and announce success when requested.
 # Globals:
 #   KEEP_FONT_ARCHIVES
-#   DOWN_DIR
+#   DOWNLOAD_DIR
 # Arguments:
 #   Whether all selected fonts installed successfully (default: true).
 # Outputs:
@@ -837,7 +837,7 @@ uninstall_fonts() {
 #######################################
 post_install() {
     if [[ "$KEEP_FONT_ARCHIVES" == "true" ]]; then
-        info "The downloaded font archives can be found in $DOWN_DIR"
+        info "The downloaded font archives can be found in $DOWNLOAD_DIR"
     fi
     if [[ "${1:-true}" == "true" ]]; then
         confirm "Enjoy your new fonts!"

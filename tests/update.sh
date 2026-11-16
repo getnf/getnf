@@ -18,8 +18,8 @@ for global in false true; do
             source <(sed '$d' "$repo_root/getnf")
             check_dependencies() {
                 FONT_DIR="$case_dir/fonts"
-                DOWN_DIR="$case_dir/downloads"
-                mkdir -p "$FONT_DIR" "$DOWN_DIR" "$FONT_RELEASES_DIR"
+                DOWNLOAD_DIR="$case_dir/downloads"
+                mkdir -p "$FONT_DIR" "$DOWNLOAD_DIR" "$FONT_RELEASES_DIR"
             }
             get_latest_release_version() {
                 [[ "$scenario" != metadata-failure ]] || return 1

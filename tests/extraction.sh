@@ -20,11 +20,11 @@ for global in false true; do
             # shellcheck source=/dev/null
             source <(sed '$d' "$repo_root/getnf")
             FONT_DIR="$case_dir/fonts"
-            DOWN_DIR="$case_dir/downloads"
+            DOWNLOAD_DIR="$case_dir/downloads"
             OPERATE_GLOBALLY="$global"
             RELEASE=vTEST
             marker=$(get_font_release_file Hack)
-            command mkdir -p "$FONT_DIR" "$DOWN_DIR" "$FONT_RELEASES_DIR"
+            command mkdir -p "$FONT_DIR" "$DOWNLOAD_DIR" "$FONT_RELEASES_DIR"
             if [[ "$scenario" == corrupt-archive ]]; then
                 command mkdir -p "$FONT_DIR/Hack"
                 printf 'old font\n' > "$FONT_DIR/Hack/old.ttf"
@@ -32,9 +32,9 @@ for global in false true; do
             fi
             download_font() {
                 if [[ "$scenario" == corrupt-archive ]]; then
-                    printf 'not an archive\n' > "$DOWN_DIR/Hack.tar.xz"
+                    printf 'not an archive\n' > "$DOWNLOAD_DIR/Hack.tar.xz"
                 else
-                    cp "$fixture/font.tar.xz" "$DOWN_DIR/Hack.tar.xz"
+                    cp "$fixture/font.tar.xz" "$DOWNLOAD_DIR/Hack.tar.xz"
                 fi
             }
             mkdir() {
