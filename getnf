@@ -28,6 +28,7 @@ KEEP_FONT_ARCHIVES='false'
 INCLUDE_INSTALLED_FONTS='false'
 
 DOWNLOAD_DIR=''
+DOWNLOAD_STAGING_DIR=''
 FONT_DIR=''
 LOADING_ANIMATION_PID=''
 LOADING_ANIMATION_ACTIVE='false'
@@ -242,17 +243,19 @@ handle_hangup() {
 }
 
 #######################################
-# Stop the animation and remove temporary downloads unless kept with -k.
+# Stop animation and remove partial staging; retain complete archives with -k.
 # Globals:
 #   DOWNLOAD_DIR
+#   DOWNLOAD_STAGING_DIR
 #   KEEP_FONT_ARCHIVES
-#   LOADING_ANIMATION_PID
-#   LOADING_ANIMATION_ACTIVE
 # Arguments:
 #   None
 #######################################
 cleanup() {
     stop_loading_animation
+    if [[ -n "$DOWNLOAD_STAGING_DIR" ]]; then
+        rm -rf -- "$DOWNLOAD_STAGING_DIR"
+    fi
     if [[ -n "$DOWNLOAD_DIR" && "$KEEP_FONT_ARCHIVES" == "false" ]]; then
         rm -rf -- "$DOWNLOAD_DIR"
     fi
@@ -329,7 +332,6 @@ init_download_dir() {
 # Globals:
 #   OPERATE_GLOBALLY
 #   FONT_DIR
-#   DOWNLOAD_DIR
 #   FONT_RELEASES_DIR
 # Arguments:
 #   None
@@ -394,9 +396,6 @@ verify_internet_access() {
 
 #######################################
 # Check curl and connectivity, then prepare runtime directories.
-# Globals:
-#   DOWNLOAD_DIR
-#   FONT_DIR
 # Arguments:
 #   None
 # Outputs:
@@ -643,8 +642,10 @@ filter_installed_fonts() {
 }
 
 #######################################
-# Download a font archive into the current working directory.
+# Download a font archive through private staging into DOWNLOAD_DIR.
 # Globals:
+#   DOWNLOAD_DIR
+#   DOWNLOAD_STAGING_DIR
 #   NERDFONTSREPO
 #   RELEASE
 #   ON_MAC
@@ -655,24 +656,44 @@ filter_installed_fonts() {
 # Outputs:
 #   Writes download status to stdout and curl progress/errors to stderr.
 # Returns:
-#   0 on success, nonzero if curl fails.
+#   0 on success, nonzero if staging, curl, promotion, or cleanup fails.
 #######################################
 download_font() {
-    local status=0
-    local opts=("--fail" "--show-error" "--location" "--remote-header-name" "--remote-name")
+    local status=0 staging_dir
+    local opts=("--fail" "--show-error" "--location")
+    staging_dir=$(mktemp -d "$DOWNLOAD_DIR/.getnf-download.XXXXXX") || {
+        alert "Could not create private archive staging directory." >&2
+        return 1
+    }
+    DOWNLOAD_STAGING_DIR=$staging_dir
+    opts+=("--output" "$DOWNLOAD_STAGING_DIR/archive.partial")
     if [[ $ON_MAC == "false" ]]; then
         opts+=("--silent")
         echo -n "Downloading $1...  "
         start_loading_animation
-        curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz" || status=$?
-        stop_loading_animation
-        ((status == 0)) || return "$status"
-        confirm "Done"
     else
         # TODO: figure out how to disable messages about bg process termination
         opts+=("--progress-bar")
         info "Downloading $1... "
-        curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz" || return $?
+    fi
+    curl "${opts[@]}" "$NERDFONTSREPO/releases/download/$RELEASE/$1.tar.xz" || status=$?
+    if [[ $ON_MAC == "false" ]]; then
+        stop_loading_animation
+    fi
+    if ((status == 0)); then
+        if [[ -d "$DOWNLOAD_DIR/$1.tar.xz" ]]; then
+            alert "Archive destination is a directory: $DOWNLOAD_DIR/$1.tar.xz" >&2
+            status=1
+        else
+            mv -f -- "$DOWNLOAD_STAGING_DIR/archive.partial" "$DOWNLOAD_DIR/$1.tar.xz" || status=$?
+        fi
+    fi
+    rm -rf -- "$DOWNLOAD_STAGING_DIR" || return 1
+    DOWNLOAD_STAGING_DIR=''
+    ((status == 0)) || return "$status"
+    if [[ $ON_MAC == "false" ]]; then
+        confirm "Done"
+    else
         erase_line
         erase_line
         echo "Downloading $1... ${GREEN}Done${RESET}"
@@ -732,9 +753,7 @@ save_font_release() {
 install_font() {
     local status=0
     pushd "$DOWNLOAD_DIR" > /dev/null || return 1
-    # Remove the existing archive so curl -OJ can retry the download.
-    rm -f "$DOWNLOAD_DIR/$1.tar.xz" &&
-        download_font "$1" &&
+    download_font "$1" &&
         extract_font "$1" &&
         save_font_release "$1" &&
         confirm "Done" || status=$?
@@ -1047,10 +1066,6 @@ handle_user_input() {
 
 #######################################
 # Show installed fonts and the menu, then collect selections.
-# Globals:
-#   INSTALLED_FONTS
-#   FONT_OPTIONS
-#   SELECTED_FONTS
 # Arguments:
 #   None
 # Outputs:
@@ -1068,7 +1083,6 @@ menu_install() {
 #######################################
 # Collect font selections with fzf and append them to SELECTED_FONTS.
 # Globals:
-#   INSTALLED_FONTS
 #   FONT_OPTIONS
 #   SELECTED_FONTS
 #   OLIVE
