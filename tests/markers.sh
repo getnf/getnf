@@ -35,6 +35,7 @@ for global in false true; do
             get_all_fonts() { ALL_FONTS=(Hack Good); }
             download_font() { echo "Downloading $1"; }
             tar() {
+                [[ "$1" != -tf ]] || return 0
                 # Simulate extraction changing installed files before marker persistence.
                 printf 'new font\n' > "$FONT_DIR/${2%.tar.xz}/font.ttf"
             }
