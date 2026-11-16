@@ -701,7 +701,7 @@ download_font() {
 }
 
 #######################################
-# Extract a font archive into its family directory.
+# Check archive readability, then extract into its family directory.
 # Globals:
 #   OPERATE_GLOBALLY
 #   FONT_DIR
@@ -710,9 +710,14 @@ download_font() {
 # Outputs:
 #   Writes installation progress to stdout and command errors to stderr.
 # Returns:
-#   0 on success, nonzero if directory creation or extraction fails.
+#   0 on success, nonzero if validation, directory creation, or extraction fails.
 #######################################
 extract_font() {
+    tar -tf "$1.tar.xz" > /dev/null || {
+        local status=$?
+        alert "Cannot read archive for $1." >&2
+        return "$status"
+    }
     echo -n "Installing $1... "
     if [[ "$OPERATE_GLOBALLY" == "true" ]]; then
         sudo mkdir -p "$FONT_DIR/$1" || return $?
