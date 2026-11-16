@@ -660,7 +660,10 @@ filter_installed_fonts() {
 #######################################
 download_font() {
     local status=0 staging_dir
-    local opts=("--fail" "--show-error" "--location")
+    # Bound connection and stalled-transfer waits without capping large downloads.
+    # Do not restart failed archives, including when curl config enables retries.
+    local opts=("--fail" "--show-error" "--location"
+        "--connect-timeout" "15" "--speed-limit" "1" "--speed-time" "120" "--retry" "0")
     staging_dir=$(mktemp -d "$DOWNLOAD_DIR/.getnf-download.XXXXXX") || {
         alert "Could not create private archive staging directory." >&2
         return 1
