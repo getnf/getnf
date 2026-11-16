@@ -22,6 +22,8 @@ for platform in Linux Darwin; do
             curl() {
                 printf called > "$case_dir/curl-called"
                 [[ " $* " == *' --fail '* && " $* " == *' --show-error '* ]] || return 99
+                while [[ "$1" != --output ]]; do shift; done
+                printf partial > "$2"
                 return "$curl_status"
             }
             sudo() {
@@ -84,9 +86,11 @@ run_cli() (
     get_latest_release_version() { :; }
     get_all_fonts() { ALL_FONTS=(Good Bad Later); }
     curl() {
-        local url="${!#}"
+        local url="${!#}" output
+        while [[ "$1" != --output ]]; do shift; done
+        output=$2
         [[ "$url" != */Bad.tar.xz ]] || return 22
-        cp "$fixture/font.tar.xz" "${url##*/}"
+        cp "$fixture/font.tar.xz" "$output"
     }
     sudo() {
         echo 'Unexpected sudo call in download test' >&2
@@ -135,6 +139,8 @@ for keep_archives in false true; do
             printf 'old font\n' > "$case_dir/fonts/Bad/old.ttf"
             printf 'vOLD\n' > "$records/Bad_release.txt"
         fi
+        mkdir -p "$case_dir/downloads"
+        printf 'old archive\n' > "$case_dir/downloads/Bad.tar.xz"
         start_dir=$PWD
         status=0
         run_cli > "$case_dir/stdout" 2> "$case_dir/stderr" || status=$?
@@ -158,6 +164,7 @@ for keep_archives in false true; do
         if [[ "$keep_archives" == true ]]; then
             test "$(grep -Fxc "$archive_notice" "$case_dir/stdout")" = 1
             test -d "$case_dir/downloads"
+            test "$(cat "$case_dir/downloads/Bad.tar.xz")" = 'old archive'
         else
             if grep -Fq "$archive_notice" "$case_dir/stdout"; then exit 1; fi
             test ! -e "$case_dir/downloads"
@@ -184,33 +191,106 @@ for keep_archives in false true; do
     done
 done
 
-# A failed archive removal must stop before any subsequent installation step.
-# Mocks and sourced globals are intentionally confined to this subshell.
-# shellcheck disable=SC2329,SC2031,SC2034
-(
-    case_dir="$fixture/removal-failure"
-    export HOME="$case_dir/home" XDG_DATA_HOME="$case_dir/data"
-    # shellcheck source=/dev/null
-    source <(sed '$d' "$script_dir/getnf")
-    DOWNLOAD_DIR="$case_dir/downloads"
-    mkdir -p "$DOWNLOAD_DIR" "$FONT_RELEASES_DIR"
-    printf 'old archive\n' > "$DOWNLOAD_DIR/Bad.tar.xz"
-    printf 'vOLD\n' > "$FONT_RELEASES_DIR/Bad_release.txt"
-    rm() {
-        touch "$case_dir/removal-called"
-        return 13
-    }
-    download_font() { touch "$case_dir/download-called"; }
-    extract_font() { touch "$case_dir/extract-called"; }
-    save_font_release() { printf 'vTEST\n' > "$FONT_RELEASES_DIR/Bad_release.txt"; }
-    status=0
-    install_font Bad || status=$?
-    test "$status" = 13
-    test "$PWD" = "$start_dir"
-    test -e "$case_dir/removal-called"
-    test ! -e "$case_dir/download-called"
-    test ! -e "$case_dir/extract-called"
-    test "$(cat "$DOWNLOAD_DIR/Bad.tar.xz")" = 'old archive'
-    test "$(cat "$FONT_RELEASES_DIR/Bad_release.txt")" = vOLD
-)
+# Private staging must never expose partial data as a completed archive.
+# Platform curl/progress paths and CLI retention are covered above. Exercise
+# shared staging failures once, and partial/signal cleanup in both retention modes.
+platform=Linux
+for fixture_case in true-success true-promotion true-directory true-staging \
+    false-partial true-partial false-INT true-INT false-TERM true-TERM false-HUP true-HUP; do
+    keep=${fixture_case%%-*}
+    scenario=${fixture_case#*-}
+    case_dir="$fixture/private-$platform-$keep-$scenario"
+    mkdir -p "$case_dir"
+    set +e
+    # Sourced functions invoke these mocks indirectly.
+    # shellcheck disable=SC2329,SC2030,SC2031,SC2034
+    (
+        set -e
+        uname() { echo "$platform"; }
+        # shellcheck source=/dev/null
+        source <(sed '$d' "$script_dir/getnf")
+        DOWNLOAD_DIR="$case_dir/downloads"
+        KEEP_FONT_ARCHIVES=$keep
+        RELEASE=vTEST
+        mkdir -p "$DOWNLOAD_DIR"
+        printf old > "$DOWNLOAD_DIR/Hack.tar.xz"
+        printf unrelated > "$DOWNLOAD_DIR/unrelated"
+        trap cleanup EXIT
+        trap handle_interrupt INT
+        trap handle_termination TERM
+        trap handle_hangup HUP
+        start_loading_animation() { :; }
+        stop_loading_animation() { :; }
+        sudo() { return 99; }
+        mktemp() {
+            if [[ "$scenario" == staging ]]; then
+                printf '%s\n' "$case_dir/innocent"
+                return 1
+            fi
+            command mktemp "$@"
+        }
+        mv() {
+            [[ "$scenario" != promotion ]] || return 13
+            command mv "$@"
+        }
+        curl() {
+            [[ " $* " != *' --remote-name '* && " $* " != *' --remote-header-name '* ]] || return 99
+            while [[ "$1" != --output ]]; do shift; done
+            test "$2" != "$DOWNLOAD_DIR/Hack.tar.xz" || return 99
+            test -d "${2%/*}" || return 99
+            # Only the permission prefix is inspected, never the filename.
+            # shellcheck disable=SC2012
+            test "$(LC_ALL=C ls -ld "${2%/*}" | cut -c1-10)" = drwx------ || return 99
+            printf complete > "$2"
+            if [[ "$scenario" != directory ]]; then
+                test "$(cat "$DOWNLOAD_DIR/Hack.tar.xz")" = old || return 99
+            fi
+            case "$scenario" in
+                partial) return 22 ;;
+                INT | TERM | HUP) kill -s "$scenario" "$BASHPID" ;;
+            esac
+        }
+        mkdir -p "$case_dir/innocent"
+        touch "$case_dir/innocent/keep"
+        if [[ "$scenario" == directory ]]; then
+            rm "$DOWNLOAD_DIR/Hack.tar.xz"
+            mkdir "$DOWNLOAD_DIR/Hack.tar.xz"
+        fi
+        status=0
+        download_font Hack || status=$?
+        case "$scenario" in
+            success)
+                test "$status" = 0
+                test "$(cat "$DOWNLOAD_DIR/Hack.tar.xz")" = complete
+                ;;
+            partial) test "$status" = 22 ;;
+            promotion) test "$status" = 13 ;;
+            directory | staging) test "$status" = 1 ;;
+        esac
+        test -f "$case_dir/innocent/keep"
+        test -z "$(find "$DOWNLOAD_DIR" -name '.getnf-download.*' -print)"
+        if [[ "$scenario" != success && "$scenario" != directory ]]; then
+            test "$(cat "$DOWNLOAD_DIR/Hack.tar.xz")" = old
+        fi
+    ) > "$case_dir/output" 2>&1
+    status=$?
+    set -e
+    case "$scenario" in
+        INT) expected=130 ;;
+        TERM) expected=143 ;;
+        HUP) expected=129 ;;
+        *) expected=0 ;;
+    esac
+    if [[ "$status" != "$expected" ]]; then
+        cat "$case_dir/output" >&2
+        echo "FAIL: $platform/$keep/$scenario status=$status" >&2
+        exit 1
+    fi
+    if [[ "$keep" == true ]]; then
+        test -f "$case_dir/downloads/unrelated"
+        test -z "$(find "$case_dir/downloads" -name '.getnf-download.*' -print)"
+    else
+        test ! -e "$case_dir/downloads"
+    fi
+done
 printf 'Download tests passed\n'
